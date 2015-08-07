@@ -127,11 +127,15 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 			pin = int(pin)
 
 			logging.info("pin %d: rpi_id %s" % (pin, self.application.conf['rpi_id']))
+			if self.application.db.get('IS_HUNG_UP'):
+				self.set_status(400)
+				self.finish({ 'ok' : False, 'error' : "Phone is hung up"})
+				return
 
 			# play dmtf tone;
 			command = { "press" : self.application.map_pin_to_tone(pin) }
+			
 			mode = int(self.application.db.get('MODE'))
-
 			logging.info("CURRENT MODE: %d" % mode)
 
 			if mode == GATHER_MODE:
@@ -155,7 +159,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 			
 			result = self.application.send_command(command)
 
-			self.set_status(200 if result['ok'] else 404)
+			self.set_status(200 if result['ok'] else 400)
 			self.finish(result)
 
 	def map_pin_to_tone(self, pin):
@@ -176,32 +180,33 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 		logging.info("on key pressed: %d" % key)
 
 	def reset_for_call(self):
+		self.db.set('IS_HUNG_UP', False)
 		self.db.set('MODE', RESPOND_MODE)
 		self.db.set('gathered_keys', None)
 
 	def on_pick_up(self):
 		logging.info("picking up")
 
-		result = { 'ok' : True }
 		self.reset_for_call()
 
 		p = Process(target=self.run_script)
 		p.start()
 
-		return result
+		return result = { 'ok' : not self.db.get('IS_HUNG_UP') }
 
 	def on_hang_up(self):
 		logging.info("hanging up")
 
 		stop_daemon(self.conf['d_files']['module'])
-		result = { 'ok' : True }
+		self.db.set('IS_HUNG_UP', True)
 
-		return result
+		return { 'ok' : self.db.get('IS_HUNG_UP') }
 
 	def get_status(self):
 		logging.info("getting status")
 		
 		status = { 'ok' : True }
+		
 		# can we ping processing?
 		# is gpio ok?
 
