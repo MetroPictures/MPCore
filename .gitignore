@@ -1,0 +1,9 @@
+.DS_Store
+*.pyc
+
+config.json
+MPP/bin/
+MPP/library/macosx64/
+
+media/
+!media/dtmf
