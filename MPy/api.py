@@ -71,20 +71,25 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 		MPIVR.__init__(self)
 		MPRPi.__init__(self)
 
+		# start processing sketch
+
 		p = Process(target=self.start_api)
 		p.start()
 
 		p = Process(target=self.start_RPi)
 		p.start()
 
+		
+
 		return True
 
 	def stop(self):
 		logging.info("Stop invoked.")
 
-		self.stop_api()
 		self.stop_RPi()
-
+		self.stop_api()
+		# stop processing sketch
+		
 		return True
 
 	class TestHandler(tornado.web.RequestHandler):

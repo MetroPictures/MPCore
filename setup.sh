@@ -17,9 +17,9 @@ sudo mkdir -p /var/redis/$REDIS_PORT
 sudo cp utils/redis_init_script /etc/init.d/redis_$REDIS_PORT
 
 # pip install
-cd ~/$MODULE_DIR/core/MPy
-sudo pip install -r requirements.txt
+cd $MODULE_DIR/core/MPy
+pip install -r requirements.txt
 
 # symlink all media
-cd ~/$MODULE_DIR/core/media
-ln -s ~/$MODULE_DIR/media/* .
+cd $MODULE_DIR/core/media
+ln -s $MODULE_DIR/media/* .

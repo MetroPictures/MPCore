@@ -28,6 +28,8 @@ Each sculpture requires this core library in its root directory.  Other than tha
 
 Please have a look at any of the "sculpture packages" for an example of how to use the core library.
 
+**Important:** Although this repo is designed to run on Raspberry Pi (and thus, linux), if you're doing testing/debugging on a Mac or PC, you will need to manually include the GStreamer dlls in `MPP/library` or else videos will not play and you will get errors.  On RPi, you do not need to do this, because GStreamer objects are globally available.
+
 ### Config Files
 
 Config files should be called `config.json` and be placed in the root directory.  Here's an example config file:

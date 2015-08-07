@@ -5,5 +5,5 @@ config.json
 MPP/bin/
 MPP/library/macosx64/
 
-media/
+media/*
 !media/dtmf

@@ -23,14 +23,12 @@ for mm in media_manifest:
 	
 	if not os.path.exists(out_dir):
 		os.makedirs(out_dir)
-		print "initialized empty directory %s" % mm
+		print "initialized empty directory \"%s\"" % mm
 
 	try:
 		ftp.cwd(mm)
 	except Exception as e:
-		print "directory %s doesn't exist in CDN" % mm
-		print e, type(e)
-		
+		print "directory \"%s\" doesn't exist in CDN" % mm		
 		continue
 
 	dir_list = []
@@ -41,7 +39,8 @@ for mm in media_manifest:
 		out_file = os.path.join(out_dir, l)
 
 		try:
-			ftp.retrbinary("RETR %s" % l, out_file.write)
+			with open(out_file, 'wb+') as O:
+				ftp.retrbinary("RETR %s" % l, O.write)
 		except Exception as e:
 			print "could not download %s to %s" % (l, out_file)
 			print e, type(e)
@@ -53,7 +52,10 @@ for mm in media_manifest:
 ftp.quit()
 
 # make .monitor dir
-os.mkdir(os.path.join(BASE_DIR, ".monitor"))
+try:
+	os.mkdir(os.path.join(BASE_DIR, ".monitor"))
+except Exception as e:
+	pass
 
 # run setup scripts
 run = Popen(['core/setup.sh', BASE_DIR, str(redis_port)])
