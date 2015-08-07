@@ -32,7 +32,7 @@ Please have a look at any of the "sculpture packages" for an example of how to u
 
 Config files should be called `config.json` and be placed in the root directory.  Here's an example config file:
 
-'''
+```
 {
 	"rpi_id" : "echo_priest",
 	"api_port" : 8080,
@@ -52,7 +52,8 @@ Config files should be called `config.json` and be placed in the root directory.
 		"home_dir" : "EchoPriest"
 	}
 }
-'''
+
+```
 
 The `rpi_id` directive is a short code for the Raspberry Pi running the sculpture.  Alphanumeric, no spaces or special characters.
 
@@ -66,7 +67,7 @@ The `cdn_directive` is an object that describes how to connect to the FTP server
 
 ### CDN
 
-An FTP server exists to push the necessary files to the sculptures (which are, of course, too large to be hosted here).  Conventionally, each sculpture should have a `prompts` folder (full of mp3s for the IVR to "say").  If the sculpture includes video, a `video` folder is required.  **Video must be Quick Time movies, because that's what Processing requires.**
+An [FTP server](https://github.com/MetroPictures/MPCDN) exists to push the necessary files to the sculptures (which are, of course, too large to be hosted here).  Conventionally, each sculpture should have a `prompts` folder (full of mp3s for the IVR to "say").  If the sculpture includes video, a `video` folder is required.  **Video must be Quick Time movies, because that's what Processing requires.**
 
 ### Testing Console
 
@@ -78,6 +79,6 @@ After cloning, run `git submodule update --init --recursive`.  Then create your 
 
 ### Usage
 
-Run: `python [module_name].py --start`
-Stop: `python [module_name].py --stop`
-Restart `python [module_name].py --restart`
+*	Run: `python [module_name].py --start`
+*	Stop: `python [module_name].py --stop`
+*	Restart `python [module_name].py --restart`
