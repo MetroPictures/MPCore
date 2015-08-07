@@ -192,7 +192,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 		p = Process(target=self.run_script)
 		p.start()
 
-		return result = { 'ok' : not self.db.get('IS_HUNG_UP') }
+		return { 'ok' : not self.db.get('IS_HUNG_UP') }
 
 	def on_hang_up(self):
 		logging.info("hanging up")
