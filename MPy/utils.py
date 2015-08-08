@@ -24,6 +24,9 @@ def get_config(keys):
 
 	return None
 
+def str_to_bool(str):
+	return json.loads(str.lower())
+
 def start_daemon(d_files):
 	print "starting daemon"
 	

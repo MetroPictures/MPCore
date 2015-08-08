@@ -5,7 +5,7 @@ import tornado.ioloop, tornado.httpserver, tornado.web
 from ivr import MPIVR
 from rpi import MPRPi
 
-from utils import start_daemon, stop_daemon, get_config
+from utils import start_daemon, stop_daemon, get_config, str_to_bool
 from vars import PROD_MODE, BASE_DIR, GATHER_MODE, RESPOND_MODE
 
 def terminationHandler(signal, frame): exit(0)
@@ -62,7 +62,8 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 		]
 
 		self.gpio_mappings = gpio_mappings
-
+		self.db = redis.StrictRedis(host='localhost', port=self.conf['redis_port'], db=0)
+		
 		logging.basicConfig(filename=self.conf['d_files']['api']['log'], level=logging.DEBUG)
 
 	def start(self):
@@ -78,8 +79,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 
 		p = Process(target=self.start_RPi)
 		p.start()
-
-		
 
 		return True
 
@@ -98,7 +97,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 
 	class StatusHandler(tornado.web.RequestHandler):
 		def get(self):
-			logging.info("getting status")
 			result = self.application.get_status()
 
 			self.set_status(200 if result['ok'] else 400)
@@ -127,7 +125,8 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 			pin = int(pin)
 
 			logging.info("pin %d: rpi_id %s" % (pin, self.application.conf['rpi_id']))
-			if self.application.db.get('IS_HUNG_UP'):
+
+			if str_to_bool(self.application.db.get('IS_HUNG_UP')):
 				self.set_status(400)
 				self.finish({ 'ok' : False, 'error' : "Phone is hung up"})
 				return
@@ -163,8 +162,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 			self.finish(result)
 
 	def map_pin_to_tone(self, pin):
-		# shifted by default!
-
 		if pin not in [12, 13, 14]:
 			tone = str(pin - 2)
 		elif pin == 12:
@@ -192,7 +189,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 		p = Process(target=self.run_script)
 		p.start()
 
-		return { 'ok' : not self.db.get('IS_HUNG_UP') }
+		return { 'ok' : not str_to_bool(self.db.get('IS_HUNG_UP')) }
 
 	def on_hang_up(self):
 		logging.info("hanging up")
@@ -200,17 +197,16 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 		stop_daemon(self.conf['d_files']['module'])
 		self.db.set('IS_HUNG_UP', True)
 
-		return { 'ok' : self.db.get('IS_HUNG_UP') }
+		return { 'ok' : str_to_bool(self.db.get('IS_HUNG_UP')) }
 
 	def get_status(self):
 		logging.info("getting status")
-		
-		status = { 'ok' : True }
-		
+
 		# can we ping processing?
 		# is gpio ok?
 
-		return status
+		return { 'ok' : \
+			bool(self.send_command({ 'check_status' : True})['ok'] and self.get_gpio_status()) }
 
 	def run_script(self):
 		start_daemon(self.conf['d_files']['module'])
@@ -221,7 +217,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPRPi):
 
 		logging.info("starting MPSAPI")
 
-		self.db = redis.StrictRedis(host='localhost', port=self.conf['redis_port'], db=0)
 		self.db.set('MODE', RESPOND_MODE)
 
 		tornado.web.Application.__init__(self, self.routes)

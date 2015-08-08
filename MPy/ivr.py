@@ -57,11 +57,7 @@ class MPIVR(object):
 				gathered_keys = json.loads(self.db.get('gathered_keys'))				
 				
 				if len(set(release_keys) & set(gathered_keys)) == 1:
-					self.db.set('MODE', RESPOND_MODE)
-					self.db.set('gathered_keys', None)
-
 					logging.info("gathered %s" % gathered_keys)
-
 					break			
 
 			except Exception as e:
@@ -69,7 +65,8 @@ class MPIVR(object):
 
 			if expires and abs(gather_start - time()) > DEFAULT_GATHER_EXPIRY:
 				logging.info("gather has expired!")
-				return None
+				gathered_keys = None
+				break
 
 			sleep(1)
 
@@ -77,6 +74,8 @@ class MPIVR(object):
 			logging.debug("release keys: %s" % release_keys)
 			logging.debug("gathered keys: %s" % gathered_keys)
 
+		self.db.set('MODE', RESPOND_MODE)
+		self.db.set('gathered_keys', None)
 		return gathered_keys
 
 	def prompt(self, message, release_keys=DEFAULT_RELEASE_KEY, expires=False):

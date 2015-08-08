@@ -1,7 +1,7 @@
 import os, requests, logging
 #from RPi import GPIO
 
-from utils import start_daemon, stop_daemon, get_config
+from utils import start_daemon, stop_daemon, get_config, str_to_bool
 from vars import PROD_MODE, BASE_DIR
 
 class MPRPi(object):
@@ -35,13 +35,22 @@ class MPRPi(object):
 				logging.debug("receiver pin set here...")
 
 		start_daemon(self.conf['d_files']['gpio'])
+		self.db.set('GPIO_STATUS', True)
+
 		logging.info("GPIO listening...")
 
 		while True:
 			pass
 
 	def stop_RPi(self):
+		self.db.set('GPIO_STATUS', False)
 		stop_daemon(self.conf['d_files']['gpio'])
+
+		logging.info("GPIO Stopped")
+
+	def get_gpio_status(self):
+		# maybe this will be something more substantial...
+		return str_to_bool(self.db.get('GPIO_STATUS'))
 
 	def __on_button_press(self, pin):
 		self.__send("mapping/%d" % pin)
