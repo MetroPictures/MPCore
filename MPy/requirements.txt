@@ -3,4 +3,3 @@ pycrypto
 fabric
 redis
 tornado
-rpi.gpio
