@@ -66,8 +66,10 @@ class MPRPi(object):
 		
 		try:
 			r = requests.get(url)
+			logging.info(r.content)
 		except Exception as e:
 			logging.warning("Could not perform request to %s: " % url)
+			
 			if PROD_MODE == "debug":
 				print e, type(e)
 
