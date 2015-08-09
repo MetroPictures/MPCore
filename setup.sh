@@ -20,6 +20,7 @@ sudo cp src/redis-cli /usr/local/bin
 sudo mkdir /etc/redis
 sudo mkdir -p /var/redis/$REDIS_PORT
 sudo cp utils/redis_init_script /etc/init.d/redis_$REDIS_PORT
+sudo update-rc.d redis_$REDIS_PORT defaults
 
 # make virtualenv
 virtualenv .venv

@@ -61,3 +61,27 @@ except Exception as e:
 run = Popen(['core/setup.sh', BASE_DIR, str(redis_port)])
 run.communicate()
 
+# modify redis config
+redis_conf = []
+redis_repl = [
+	("daemonize no", "no", "yes"),
+	("pidfile /var/run/redis.pid", "redis", "redis_%d" % redis_port),
+	("port 6379", "6379", str(redis_port)),
+	("logfile \"\"", "\"\"", "/var/log/redis_%d.log" % redis_port),
+	("dir ./", "./", "/var/redis/%d" % redis_port)
+]
+
+with open(os.path.join(os.path.expanduser('~'), "redis-stable", "redis.conf"), 'rb') as R:
+	for line in R.read().splitlines():
+		for rr in redis_repl:
+			if line == rr[0]:
+				line = line.replace(rr[1], rr[2])
+
+		redis_conf.append(line)
+
+with open(os.path.join(BASE_DIR, "%d.conf" % redis_port), 'wb+') as R:
+	R.write("\n".join(redis_conf))
+
+Popen(['sudo', 'mv', os.path.join(BASE_DIR, "%d.conf" % redis_port), \
+	os.path.join("/", "etc", "redis", "%d.conf" % redis_port)])
+
