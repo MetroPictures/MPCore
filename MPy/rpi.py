@@ -1,5 +1,5 @@
 import os, requests, logging
-#from RPi import GPIO
+from RPi import GPIO
 
 from utils import start_daemon, stop_daemon, get_config, str_to_bool
 from vars import PROD_MODE, BASE_DIR
@@ -15,21 +15,19 @@ class MPRPi(object):
 		logging.basicConfig(filename=self.conf['d_files']['gpio']['log'], level=logging.DEBUG)
 
 	def start_RPi(self):
-		'''
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setwarnings(False)
-		'''
 
 		if self.gpio_mappings is None:
 			self.gpio_mappings = []
 
 		# default mappings for receiver (pick-up/hang-up)
-		self.gpio_mappings.append((self.conf['receiver_pin'], "GPIO.IN", "GPIO.PUD_DOWN"))
+		self.gpio_mappings.append((self.conf['receiver_pin'], GPIO.IN, GPIO.PUD_DOWN))
 
 		for mapping in self.gpio_mappings:
 			if mapping[0] != self.conf['receiver_pin']:
-				#GPIO.add_event_detect(mapping[0], GPIO.FALLING, self.__on_button_press, 100)
-				logging.debug("adding hypothetical mapping %d" % mapping[0])
+				GPIO.add_event_detect(mapping[0], GPIO.FALLING, self.__on_button_press, 100)
+				#logging.debug("adding hypothetical mapping %d" % mapping[0])
 			else:
 				# custom mapping for receiver pin...
 				logging.debug("receiver pin set here...")
