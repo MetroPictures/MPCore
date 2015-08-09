@@ -4,8 +4,7 @@ REDIS_PORT=$2
 
 # install the basics
 sudo apt-get update
-sudo apt-get install -y python-dev python-pip
-sudo pip install virtualenv
+sudo apt-get install -y python-dev python-pip lsof
 
 # setup redis
 cd ~
@@ -22,15 +21,9 @@ sudo mkdir -p /var/redis/$REDIS_PORT
 sudo cp utils/redis_init_script /etc/init.d/redis_$REDIS_PORT
 sudo update-rc.d redis_$REDIS_PORT defaults
 
-# make virtualenv
-virtualenv .venv
-source .venv/bin/activate
-
 # pip install
 cd $MODULE_DIR/core/MPy
-pip install -r requirements.txt
-
-deactivate .venv
+sudo pip install -r requirements.txt
 
 # symlink all media
 cd $MODULE_DIR/core/media

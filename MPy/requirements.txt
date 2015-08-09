@@ -3,3 +3,4 @@ pycrypto
 fabric
 redis
 tornado
+requests

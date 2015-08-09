@@ -25,7 +25,9 @@ class MPRPi(object):
 		self.gpio_mappings.append((self.conf['receiver_pin'], GPIO.IN, GPIO.PUD_DOWN))
 
 		for mapping in self.gpio_mappings:
+
 			if mapping[0] != self.conf['receiver_pin']:
+				GPIO.setup(mapping[0], mapping[1], mapping[2])
 				GPIO.add_event_detect(mapping[0], GPIO.FALLING, self.__on_button_press, 100)
 				#logging.debug("adding hypothetical mapping %d" % mapping[0])
 			else:

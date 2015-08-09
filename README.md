@@ -81,6 +81,6 @@ After cloning, run `git submodule update --init --recursive`.  Then create your 
 
 ### Usage
 
-*	Run: `python [module_name].py --start`
-*	Stop: `python [module_name].py --stop`
-*	Restart `python [module_name].py --restart`
+*	Run: `sudo python [module_name].py --start`
+*	Stop: `sudo python [module_name].py --stop`
+*	Restart `sudo python [module_name].py --restart`
