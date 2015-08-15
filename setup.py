@@ -18,6 +18,7 @@ def init_video():
 			os.putenv('SDL_VIDEODRIVER', driver)
 
 		try:
+			print "trying out driver %s" % driver
 			pygame.display.init()
 		except pygame.error:
 			logging.warning("Driver %s is not going to work for video." % driver)
@@ -28,6 +29,11 @@ def init_video():
 
 	if not driver_found:
 		print "NO SUITABLE VIDEO DRIVER FOUND."
+	else:
+		print "Display: %s" % os.getenv('DISPLAY')
+		print "Driver used: %s" % driver
+		print "PyGame info:"
+		print pygame.display.Info()
 
 def update_cdn():
 	media_manifest, cdn = get_config(['media_manifest', 'cdn'])
