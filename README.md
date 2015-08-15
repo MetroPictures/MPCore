@@ -65,7 +65,7 @@ Hey guess what?  There's also an HTML-based testing console for trying interacti
 
 ### Setup
 
-After cloning, run `git submodule update --init --recursive`.  Then create your config file.  From the root directory run `python core/setup.py`.
+After cloning, run `git submodule update --init --recursive`.  Then create your config file.  From the root directory run `python core/setup.py`.  Make sure your soundcard works.  Then reboot.
 
 ### Usage
 
