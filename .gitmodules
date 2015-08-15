@@ -1,0 +1,6 @@
+[submodule "lib/pyaudio"]
+	path = lib/pyaudio
+	url = http://people.csail.mit.edu/hubert/git/pyaudio.git
+[submodule "lib/pigpio"]
+	path = lib/pigpio
+	url = git@github.com:joan2937/pigpio.git

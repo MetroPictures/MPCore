@@ -2,33 +2,22 @@
 
 A fake IVR for Raspberry Pi, built for Camille Henrot's interactive sculptures.
 
-### Stack:
+### Features:
 
-1.	Python
-
-	*	Registers input from circuits with RPi.GPIO package
-	*	Manages the flow of our fake IVR
-	*	Makes calls to the media processor (in Java) with simple TCP sockets
-	*	Allows for easy updates (audio and video files) from our custom FTP server
-	*	Saves states with Redis as necessary
-	*	Provides an HTML-based testing console for trying out interactions without touching any wiring
-
-1.	Java
-
-	*	Receives commands from the python IVR via TCP sockets
-	*	Uses the Processing library to control audio and video playback
+*	Registers input from circuits with RPi.GPIO package
+*	Manages the flow of our fake IVR
+*	Allows for easy updates (audio and video files) from our custom FTP server
+*	Saves states with Redis as necessary
+*	Provides an HTML-based testing console for trying out interactions without touching any wiring
 
 ### Implementation
 
-Each sculpture requires this core library in its root directory.  Other than that, three components are needed:
+Each sculpture requires this core library in its root directory.  Other than that, two components are needed:
 
 1.	Python module
-1.	Java module (in a folder called `processing`)
 1.	config file
 
 Please have a look at any of the "sculpture packages" for an example of how to use the core library.
-
-**Important:** Although this repo is designed to run on Raspberry Pi (and thus, linux), if you're doing testing/debugging on a Mac or PC, you will need to manually include the GStreamer dlls in `MPP/library` or else videos will not play and you will get errors.  On RPi, you do not need to do this, because GStreamer objects are globally available.
 
 ### Config Files
 
@@ -40,7 +29,6 @@ Config files should be called `config.json` and be placed in the root directory.
 	"api_port" : 8080,
 	"num_processes" : 3,
 	"redis_port" : 6379,
-	"processing_port" : 8081,
 	"receiver_pin" : 2,
 	"media_manifest" : [
 		"video",
@@ -59,7 +47,7 @@ Config files should be called `config.json` and be placed in the root directory.
 
 The `rpi_id` directive is a short code for the Raspberry Pi running the sculpture.  Alphanumeric, no spaces or special characters.
 
-The `api_port` and `processing_port` directives correspond to the ports python and java are listening on, respectively.  The `redis_port` directive should be self-explainatory.
+The `api_port` directive corresponds to the ports python is listening on.  The `redis_port` directive should be self-explainatory.  These should NOT be set to 8888, because the GPIO requires that port to be free.
 
 The `receiver_pin` directive is the GPIO pin that registers someone picking up or hanging up the "phone".  (Other pins are mapped in the corresponding python module.)
 
@@ -69,7 +57,7 @@ The `cdn_directive` is an object that describes how to connect to the FTP server
 
 ### CDN
 
-An [FTP server](https://github.com/MetroPictures/MPCDN) exists to push the necessary files to the sculptures (which are, of course, too large to be hosted here).  Conventionally, each sculpture should have a `prompts` folder (full of mp3s for the IVR to "say").  If the sculpture includes video, a `video` folder is required.  **Video must be Quick Time movies, because that's what Processing requires.**
+An [FTP server](https://github.com/MetroPictures/MPCDN) exists to push the necessary files to the sculptures (which are, of course, too large to be hosted here).  Conventionally, each sculpture should have a `prompts` folder (full of mp3s for the IVR to "say").  If the sculpture includes video, a `video` folder is required.
 
 ### Testing Console
 
@@ -77,9 +65,11 @@ Hey guess what?  There's also an HTML-based testing console for trying interacti
 
 ### Setup
 
-After cloning, run `git submodule update --init --recursive`.  Then create your config file.  From the root directory run `python core/setup.py`.
+After cloning, run `git submodule update --init --recursive`.  Then create your config file.  From the root directory run `python core/setup.py`.  Make sure your soundcard works.  Then reboot with `sudo reboot`.  From then on, redis and pigpio will start automatically.
 
 ### Usage
+
+If the module contains video, and the Pi does not boot to GUI automatically (because you're a pro) use screen to start the display with `startx`.
 
 *	Run: `python [module_name].py --start`
 *	Stop: `python [module_name].py --stop`
