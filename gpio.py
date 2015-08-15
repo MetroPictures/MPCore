@@ -90,24 +90,24 @@ class RecieverThread(GPIOThread):
 		GPIOThread.__init__(self, gpio, pin)
 
 	def __parse_state(self, state):
-		super(RecieverThread).__parse_state(state)
+		super(RecieverThread, self).__parse_state(state)
 		# decide if it's pick up or hang up
 
 	def __on_hang_up(self):
-		super(RecieverThread).__send("hang_up")
+		super(RecieverThread, self).__send("hang_up")
 
 	def __on_pick_up(self, pin):
-		super(RecieverThread).__send("pick_up")
+		super(RecieverThread, self).__send("pick_up")
 
 class ButtonThread(GPIOThread):
 	def __init__(self, gpio, pin):
 		GPIOThread.__init__(self, gpio, pin)
 
 	def __parse_state(self, state):
-		super(ButtonThread).__parse_state(state)
+		super(ButtonThread, self).__parse_state(state)
 		# do logics?
 
 	def __on_button_press(self):
-		super(ButtonThread).__send("mapping/%d" % self.pin)
+		super(ButtonThread, self).__send("mapping/%d" % self.pin)
 
 
