@@ -4,7 +4,7 @@ A fake IVR for Raspberry Pi, built for Camille Henrot's interactive sculptures.
 
 ### Features:
 
-*	Registers input from circuits with RPi.GPIO package
+*	Registers input from circuits with [Pigpio](abyz.co.uk/rpi/pigpio/python.html) package
 *	Manages the flow of our fake IVR
 *	Allows for easy updates (audio and video files) from our custom FTP server
 *	Saves states with Redis as necessary
