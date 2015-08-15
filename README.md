@@ -29,7 +29,7 @@ Config files should be called `config.json` and be placed in the root directory.
 	"api_port" : 8080,
 	"num_processes" : 3,
 	"redis_port" : 6379,
-=	"receiver_pin" : 2,
+	"receiver_pin" : 2,
 	"media_manifest" : [
 		"video",
 		"confessions",
@@ -69,6 +69,6 @@ After cloning, run `git submodule update --init --recursive`.  Then create your 
 
 ### Usage
 
-*	Run: `sudo python [module_name].py --start`
-*	Stop: `sudo python [module_name].py --stop`
-*	Restart `sudo python [module_name].py --restart`
+*	Run: `python [module_name].py --start`
+*	Stop: `python [module_name].py --stop`
+*	Restart `python [module_name].py --restart`
