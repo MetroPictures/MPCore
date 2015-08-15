@@ -97,6 +97,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		self.stop_gpio()
 		self.stop_api()
 		
+		logging.info("EVERYTHING IS OFFLINE.")
 		return True
 
 	class TestHandler(tornado.web.RequestHandler):
@@ -237,13 +238,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		return { 'ok' : str_to_bool(self.db.get('IS_HUNG_UP')) }
 
 	def get_status(self):
-		logging.info("getting status")
-
-		# can we ping processing?
-		# is gpio ok?
-
-		return { 'ok' : \
-			bool(self.send_command({ 'check_status' : True })['ok'] and self.get_gpio_status()) }
+		return { 'ok' : self.get_gpio_status()) }
 
 	def run_script(self):
 		start_daemon(self.conf['d_files']['module'])
@@ -251,8 +246,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	def start_api(self):
 		"""Starts API, initializes the redis database, and daemonizes all processes so they may be restarted or stopped.
 		"""
-
-		logging.info("starting MPSAPI")
 
 		self.db.set('MODE', RESPOND_MODE)
 
@@ -272,6 +265,8 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 		start_daemon(self.conf['d_files']['api'])
 		server.start(self.conf['num_processes'])
+
+		logging.info("API serving...")
 		tornado.ioloop.IOLoop.instance().start()
 
 	def stop_api(self):

@@ -18,7 +18,7 @@ class MPIVR(MPAudioPad):
 		MPAudioPad.__init__(self)
 
 	def say(self, message):
-		logging.info("saying %s" % message)
+		logging.debug("saying %s" % message)
 
 		return self.send_command({ 'play' : message })
 
@@ -26,7 +26,7 @@ class MPIVR(MPAudioPad):
 		if dst is None:
 			dst = "recording_%d.wav" % time()
 
-		logging.info("recording into %s" % dst)
+		logging.debug("recording into %s" % dst)
 
 		if self.say(message)['ok'] and self.send_command({ 'start_recording' : dst })['ok']:
 			if self.gather(release_keys=release_keys) is not None:
@@ -38,43 +38,39 @@ class MPIVR(MPAudioPad):
 		if type(release_keys) is not list:
 			release_keys = [release_keys]
 		
-		gathered_keys = None
-		gather_start = time()
-
 		if type(release_keys) is not list:
 			release_keys = [release_keys]
 
+		logging.debug("gathering for %s" % release_keys)
+
+		gathered_keys = None
+		gather_start = time()
 		self.db.set('MODE', GATHER_MODE)
-		logging.info("gathering for %s" % release_keys)
 
 		while True:
 			try:
 				gathered_keys = json.loads(self.db.get('gathered_keys'))				
 				
 				if len(set(release_keys) & set(gathered_keys)) == 1:
-					logging.info("gathered %s" % gathered_keys)
+					logging.debug("gathered %s" % gathered_keys)
 					break			
 
 			except Exception as e:
 				pass
 
 			if expires and abs(gather_start - time()) > DEFAULT_GATHER_EXPIRY:
-				logging.info("gather has expired!")
+				logging.debug("gather has expired!")
 				gathered_keys = None
 				break
 
 			sleep(1)
-
-		if PROD_MODE == "debug":
-			logging.debug("release keys: %s" % release_keys)
-			logging.debug("gathered keys: %s" % gathered_keys)
 
 		self.db.set('MODE', RESPOND_MODE)
 		self.db.set('gathered_keys', None)
 		return gathered_keys
 
 	def prompt(self, message, release_keys=DEFAULT_RELEASE_KEY, expires=False):
-		print("prompt with message %s" % message)
+		logging.debug("prompt with message %s" % message)
 
 		if type(release_keys) is not list:
 			release_keys = [release_keys]

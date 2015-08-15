@@ -35,7 +35,7 @@ class MPAudioPad(object):
 			play_cmd = ["aplay", "-N", "--process-id-file", \
 				self.conf['d_files']['ap_player']['pid'], src]
 
-			logging.info("CMD: %s" % " ".join(play_cmd))
+			logging.debug("CMD: %s" % " ".join(play_cmd))
 			Popen(play_cmd, stdout=PIPE, stderr=PIPE).communicate()
 						
 			return True
