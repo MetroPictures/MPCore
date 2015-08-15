@@ -6,6 +6,29 @@ from subprocess import Popen, PIPE
 from utils import get_config
 from vars import BASE_DIR, UNPLAYABLE_FILES
 
+def init_video():
+	import pygame
+
+	display_no = os.getenv("DISPLAY")
+
+	driver_found = False
+	drivers = ['fbcon', 'directfb', 'svgalib']
+	for driver in drivers:
+		if not os.getenv('SDL_VIDEODRIVER'):
+			os.putenv('SDL_VIDEODRIVER', driver)
+
+		try:
+			pygame.display.init()
+		except pygame.error:
+			logging.warning("Driver %s is not going to work for video." % driver)
+			continue
+
+		driver_found = True
+		break
+
+	if not driver_found:
+		print "NO SUITABLE VIDEO DRIVER FOUND."
+
 def update_cdn():
 	media_manifest, cdn = get_config(['media_manifest', 'cdn'])
 	# download media from "cdn"
@@ -52,6 +75,9 @@ def update_cdn():
 
 	ftp.quit()
 
+	if "video" in media_manifest:
+		init_video()
+
 def install():
 	# run setup scripts
 	redis_port, api_port = get_config('redis_port', 'api_port')
@@ -94,6 +120,8 @@ def install():
 	Popen(['sudo', 'mv', os.path.join(BASE_DIR, "%d.conf" % redis_port), \
 		os.path.join("/", "etc", "redis", "%d.conf" % redis_port)])
 
+	print "OK!  Don't forget to test your soundcard, and then reboot!"
+
 if __name__ == "__main__":
 	if len(argv) == 1:
 		install()
@@ -101,4 +129,6 @@ if __name__ == "__main__":
 	elif len(argv) == 2:
 		if argv[1] == "update":
 			update_cdn()
+		elif argv[1] == "video_check":
+			init_video()
 

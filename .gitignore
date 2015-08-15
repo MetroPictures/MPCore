@@ -1,10 +1,6 @@
 .DS_Store
 *.pyc
 
-MPP/bin/
-MPP/dest/
-MPP/library/macosx64/
-
 config.json
 
 media/*

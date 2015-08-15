@@ -34,5 +34,3 @@ sudo pip install -r $MODULE_DIR/core/requirements.txt
 # symlink all media
 cd $MODULE_DIR/core/media
 ln -s $MODULE_DIR/media/* .
-
-echo "OK!  Don't forget to test your soundcard, and then reboot!"
