@@ -4,7 +4,7 @@ REDIS_PORT=$2
 
 # install the basics
 sudo apt-get update
-sudo apt-get install -y python-dev python-pip lsof
+sudo apt-get install -y python-dev python-pip lsof screen python-pyaudio
 
 # setup redis
 cd ~
@@ -21,9 +21,11 @@ sudo mkdir -p /var/redis/$REDIS_PORT
 sudo cp utils/redis_init_script /etc/init.d/redis_$REDIS_PORT
 sudo update-rc.d redis_$REDIS_PORT defaults
 
-# pip install
-cd $MODULE_DIR/core/MPy
-sudo pip install -r requirements.txt
+# pip install 
+sudo pip install -r $MODULE_DIR/core/requirements.txt
+sudo python $MODULE_DIR/core/pyaudio/setup.py install
+
+# fix for sound card, don't you know?
 
 # symlink all media
 cd $MODULE_DIR/core/media
