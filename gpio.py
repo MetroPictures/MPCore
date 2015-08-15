@@ -11,12 +11,10 @@ class MPGPIO(object):
 
 	def __init__(self):
 		print("init MPSAPI")
-		logging.basicConfig(filename=self.conf['d_files']['gpio']['log'], level=logging.DEBUG)		
+		logging.basicConfig(filename=self.conf['d_files']['gpio']['log'], level=logging.DEBUG)
 
 	def start_gpio(self):
-		print dir(self.gpio.sl)
-		print dir(self.gpio.sl.s)
-
+		self.db.set('GPIO_STATUS', False)
 		start_daemon(self.conf['d_files']['gpio'])
 
 		if self.gpio_mappings is None:
@@ -30,7 +28,6 @@ class MPGPIO(object):
 
 		for mapping in self.gpio_mappings:
 			sleep(1)
-			print "PIN PIN PIN %d" % mapping[0] 
 
 			if mapping[0] != receiver_pin:
 				logging.debug("setting pin %d mapping" % mapping[0])
@@ -41,18 +38,18 @@ class MPGPIO(object):
 
 			mapping[1].start()
 
-		self.db.set('GPIO_STATUS', True)
 		logging.info("GPIO listening...")
+		self.db.set('GPIO_STATUS', True)
 
 	def stop_gpio(self):
 		try:
 			self.gpio.stop()
 		except Exception as e:
-			print e, type(e)
+			pass
 
 		stop_daemon(self.conf['d_files']['gpio'])
-
 		self.db.set('GPIO_STATUS', False)
+		
 		logging.info("GPIO Stopped")
 
 	def get_gpio_status(self):
@@ -95,10 +92,10 @@ class RecieverThread(GPIOThread):
 		# decide if it's pick up or hang up
 
 	def __on_hang_up(self):
-		self.__send("hang_up")
+		super(RecieverThread).__send("hang_up")
 
 	def __on_pick_up(self, pin):
-		self.__send("pick_up")
+		super(RecieverThread).__send("pick_up")
 
 class ButtonThread(GPIOThread):
 	def __init__(self, gpio, pin):
@@ -109,6 +106,6 @@ class ButtonThread(GPIOThread):
 		# do logics?
 
 	def __on_button_press(self):
-		self.__send("mapping/%d" % self.pin)
+		super(ButtonThread).__send("mapping/%d" % self.pin)
 
 

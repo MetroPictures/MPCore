@@ -19,7 +19,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	"""
 	
-	def __init__(self, gpio_mappings=None):
+	def __init__(self):
 		print("init MPSAPI")
 
 		api_port, num_processes, redis_port, rpi_id = \
@@ -67,14 +67,15 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 			(r'/mapping/(\d+)', self.MappingHandler)
 		]
 
-		self.gpio = None
-		self.gpio_mappings = gpio_mappings
 		self.db = redis.StrictRedis(host='localhost', port=self.conf['redis_port'], db=0)
+		self.gpio = None
+		self.gpio_mappings = None
 		
 		logging.basicConfig(filename=self.conf['d_files']['api']['log'], level=logging.DEBUG)
 
 	def start(self):
 		logging.info("Start invoked.")
+		
 
 		MPGPIO.__init__(self)
 		MPIVR.__init__(self)
@@ -88,8 +89,9 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		p.start()
 
 		while not self.get_gpio_status():
-			pass
+			sleep(1)
 
+		logging.info("EVERYTHING IS ONLINE.")
 		return True
 
 	def stop(self):
@@ -244,7 +246,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		# is gpio ok?
 
 		return { 'ok' : \
-			bool(self.send_command({ 'check_status' : True})['ok'] and self.get_gpio_status()) }
+			bool(self.send_command({ 'check_status' : True })['ok'] and self.get_gpio_status()) }
 
 	def run_script(self):
 		start_daemon(self.conf['d_files']['module'])

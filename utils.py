@@ -27,9 +27,7 @@ def get_config(keys):
 def str_to_bool(str):
 	return json.loads(str.lower())
 
-def start_daemon(d_files):
-	print "starting daemon"
-	
+def start_daemon(d_files):	
 	try:
 		pid = os.fork()
 		if pid > 0:
@@ -64,8 +62,6 @@ def start_daemon(d_files):
 	print ">>> PROCESS DAEMONIZED"
 
 def stop_daemon(d_files):
-	print "stopping daemon"
-
 	pid = False
 	try:
 		f = open(d_files['pid'], 'r')
