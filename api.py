@@ -238,7 +238,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		return { 'ok' : str_to_bool(self.db.get('IS_HUNG_UP')) }
 
 	def get_status(self):
-		return { 'ok' : self.get_gpio_status()) }
+		return { 'ok' : self.get_gpio_status() }
 
 	def run_script(self):
 		start_daemon(self.conf['d_files']['module'])
