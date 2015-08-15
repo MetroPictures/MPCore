@@ -3,7 +3,7 @@ from subprocess import Popen, PIPE
 from time import time, sleep
 from fabric.api import settings, local
 
-from vars import DTMF, MAX_RECORDING_TIME, CHUNK, CHANNELS, RATE, FORMAT
+from vars import DTMF, MAX_RECORDING_TIME, RATE
 
 class MPAudioPad(object):
 	def __init__(self):

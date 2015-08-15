@@ -1,4 +1,4 @@
-import signal, os, redis, json, logging
+import signal, os, redis, json, pigpio, logging
 from multiprocessing import Process
 import tornado.ioloop, tornado.httpserver, tornado.web
 from time import sleep
@@ -67,6 +67,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 			(r'/mapping/(\d+)', self.MappingHandler)
 		]
 
+		self.gpio = None
 		self.gpio_mappings = gpio_mappings
 		self.db = redis.StrictRedis(host='localhost', port=self.conf['redis_port'], db=0)
 		
@@ -81,8 +82,13 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		p = Process(target=self.start_api)
 		p.start()
 
+		self.gpio = pigpio.pi()
+
 		p = Process(target=self.start_gpio)
 		p.start()
+
+		while not self.get_gpio_status():
+			pass
 
 		return True
 
