@@ -53,6 +53,12 @@ def update_cdn():
 	ftp.quit()
 
 def install():
+	# run setup scripts
+	redis_port, api_port = get_config('redis_port', 'api_port')
+	if 8888 in [redis_port, api_port]:
+		print "HEY, WAIT!  Port 8888 is reserved for another purpose (the GPIO).\nEdit your config and run setup.py again."
+		return
+
 	update_cdn()
 
 	# make .monitor dir
@@ -60,9 +66,6 @@ def install():
 		os.mkdir(os.path.join(BASE_DIR, ".monitor"))
 	except Exception as e:
 		pass
-
-	# run setup scripts
-	redis_port = get_config('redis_port')
 
 	run = Popen(['core/setup.sh', BASE_DIR, str(redis_port)])
 	run.communicate()

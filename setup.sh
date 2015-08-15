@@ -25,7 +25,6 @@ sudo update-rc.d redis_$REDIS_PORT defaults
 cd $MODULE_DIR/lib/pigpio
 make
 make install
-
 sudo cp $MODULE_DIR/lib/pigpiod.sh /etc/init.d/pigpiod
 sudo update-rc.d pigpiod defaults
 

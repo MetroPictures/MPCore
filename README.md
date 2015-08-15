@@ -47,7 +47,7 @@ Config files should be called `config.json` and be placed in the root directory.
 
 The `rpi_id` directive is a short code for the Raspberry Pi running the sculpture.  Alphanumeric, no spaces or special characters.
 
-The `api_port` directive corresponds to the ports python is listening on.  The `redis_port` directive should be self-explainatory.
+The `api_port` directive corresponds to the ports python is listening on.  The `redis_port` directive should be self-explainatory.  These should NOT be set to 8888, because the GPIO requires that port to be free.
 
 The `receiver_pin` directive is the GPIO pin that registers someone picking up or hanging up the "phone".  (Other pins are mapped in the corresponding python module.)
 
@@ -65,9 +65,11 @@ Hey guess what?  There's also an HTML-based testing console for trying interacti
 
 ### Setup
 
-After cloning, run `git submodule update --init --recursive`.  Then create your config file.  From the root directory run `python core/setup.py`.  Make sure your soundcard works.  Then reboot with `sudo reboot`.
+After cloning, run `git submodule update --init --recursive`.  Then create your config file.  From the root directory run `python core/setup.py`.  Make sure your soundcard works.  Then reboot with `sudo reboot`.  From then on, redis and pigpio will start automatically.
 
 ### Usage
+
+If the module contains video, and the Pi does not boot to GUI automatically (because you're a pro) use screen to start the display with `startx`.
 
 *	Run: `python [module_name].py --start`
 *	Stop: `python [module_name].py --stop`
