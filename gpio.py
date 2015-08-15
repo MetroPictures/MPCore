@@ -14,7 +14,9 @@ class MPGPIO(object):
 		logging.basicConfig(filename=self.conf['d_files']['gpio']['log'], level=logging.DEBUG)
 
 	def start_gpio(self):
+		self.gpio = pigpio.pi()
 		self.db.set('GPIO_STATUS', False)
+		
 		start_daemon(self.conf['d_files']['gpio'])
 
 		if self.gpio_mappings is None:

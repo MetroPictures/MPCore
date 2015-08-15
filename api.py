@@ -1,4 +1,4 @@
-import signal, os, redis, json, pigpio, logging
+import signal, os, redis, json, logging
 from multiprocessing import Process
 import tornado.ioloop, tornado.httpserver, tornado.web
 from time import sleep
@@ -76,14 +76,11 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	def start(self):
 		logging.info("Start invoked.")
 		
-
 		MPGPIO.__init__(self)
 		MPIVR.__init__(self)
 
 		p = Process(target=self.start_api)
 		p.start()
-
-		self.gpio = pigpio.pi()
 
 		p = Process(target=self.start_gpio)
 		p.start()
