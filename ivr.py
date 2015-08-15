@@ -37,9 +37,6 @@ class MPIVR(MPAudioPad):
 	def gather(self, release_keys=DEFAULT_RELEASE_KEY, expires=False):
 		if type(release_keys) is not list:
 			release_keys = [release_keys]
-		
-		if type(release_keys) is not list:
-			release_keys = [release_keys]
 
 		logging.debug("gathering for %s" % release_keys)
 
@@ -78,6 +75,20 @@ class MPIVR(MPAudioPad):
 		if self.say(message)['ok']:
 			gathered_keys = self.gather(release_keys=release_keys, expires=expires)
 			return list(set(release_keys) & set(gathered_keys))[0]
+
+		return None
+
+	def sequence(self, message, release_keys=DEFAULT_RELEASE_KEY, expires=False):
+		logging.debug("capturing sequence with message %s" % message)
+
+		if type(release_keys) is not list:
+			release_keys = [release_keys]
+
+		if self.say(message)['ok']:
+			gathered_keys = self.gather(release_keys=release_keys, expires=expires)
+			return [k for k in gathered_keys if k not in release_keys]
+
+		return None
 
 	def send_command(self, command):
 		return { 'ok' : self.ap_receive(command), 'command' : command }
