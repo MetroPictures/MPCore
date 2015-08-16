@@ -25,12 +25,12 @@ class MPAudioPad(object):
 		return False
 
 	def play_tone(self, tone):
-		return self.__play_audio(os.path.join(self.conf['media_dir'], "dtmf", "DTMF-%s.wav" % tone))
+		return self.play_audio(os.path.join(self.conf['media_dir'], "dtmf", "DTMF-%s.wav" % tone))
 
 	def play(self, src):
-		return self.__play_audio(os.path.join(self.conf['media_dir'], src))
+		return self.play_audio(os.path.join(self.conf['media_dir'], src))
 
-	def __play_audio(self, src):
+	def play_audio(self, src):
 		try:
 			play_cmd = ["aplay", "-N", "--process-id-file", \
 				self.conf['d_files']['ap_player']['pid'], src]
