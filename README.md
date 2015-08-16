@@ -15,7 +15,8 @@ A fake IVR for Raspberry Pi, built for Camille Henrot's interactive sculptures.
 Each sculpture requires this core library in its root directory.  Other than that, two components are needed:
 
 1.	Python module
-1.	config file
+1.	config file (`config.json`)
+1.	__(optional)__ test pad module
 
 Please have a look at any of the "sculpture packages" for an example of how to use the core library.
 
@@ -40,7 +41,8 @@ Config files should be called `config.json` and be placed in the root directory.
 		"port" : 8082,
 		"user" : "anonymous",
 		"home_dir" : "EchoPriest"
-	}
+	},
+	"custom_test_pad" : "echo_priest"
 }
 
 ```
@@ -55,6 +57,8 @@ The `media_manifest` directive is an array referring to the folders that will ho
 
 The `cdn_directive` is an object that describes how to connect to the FTP server.  The `home_dir` directive here is the root folder containing the sculpture's files.  So far, only anonymous connections are supported.
 
+The `custom_test_pad` directive points to the folder where you have your custom test pad.  See the original one for an example of how it's written.
+
 ### CDN
 
 An [FTP server](https://github.com/MetroPictures/MPCDN) exists to push the necessary files to the sculptures (which are, of course, too large to be hosted here).  Conventionally, each sculpture should have a `prompts` folder (full of mp3s for the IVR to "say").  If the sculpture includes video, a `video` folder is required.
@@ -62,6 +66,8 @@ An [FTP server](https://github.com/MetroPictures/MPCDN) exists to push the neces
 ### Testing Console
 
 Hey guess what?  There's also an HTML-based testing console for trying interactions without having to rig up any buttons on the Raspberry Pi.  Start up the engine, and open a browser to localhost:8080 (or whatever port the api is set to).  You will see a keypad (modeled after a telephone, naturally) that you can use.
+
+You can create your own test pad for additional configurations as well.  Be sure to add the folder's name as `custom_test_pad` in your config file.
 
 ### Setup
 

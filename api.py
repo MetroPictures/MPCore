@@ -22,8 +22,8 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	def __init__(self):
 		print("init MPSAPI")
 
-		api_port, num_processes, redis_port, rpi_id = \
-			get_config(['api_port', 'num_processes', 'redis_port', 'rpi_id'])
+		api_port, num_processes, redis_port, rpi_id, custom_test_pad = \
+			get_config(['api_port', 'num_processes', 'redis_port', 'rpi_id', 'custom_test_pad'])
 
 		self.conf = {
 			'rpi_id' : rpi_id,
@@ -57,10 +57,15 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 			'media_dir' : os.path.join(BASE_DIR, "core", "media")
 		}
 
+		if custom_test_pad is not None:
+			self.test_pad_dir = os.path.join(BASE_DIR, custom_test_pad)
+		else:
+			self.test_pad_dir = os.path.join(BASE_DIR, "core", "test_pad")
+
 		self.routes = [
 			("/", self.TestHandler),
 			(r'/js/(.*)', tornado.web.StaticFileHandler, \
-				{ 'path' : os.path.join(BASE_DIR, "core", "test_pad", "js")}),
+				{ 'path' : os.path.join(self.test_pad_dir, "js")}),
 			("/status", self.StatusHandler),
 			("/pick_up", self.PickUpHandler),
 			("/hang_up", self.HangUpHandler),
@@ -102,7 +107,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	class TestHandler(tornado.web.RequestHandler):
 		def get(self):
-			self.render("test_pad/index.html")
+			self.render(os.path.join(self.application.test_pad_dir, "index.html"))
 
 	class StatusHandler(tornado.web.RequestHandler):
 		def get(self):
