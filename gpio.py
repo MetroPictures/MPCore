@@ -1,9 +1,19 @@
-import os, requests, logging, pigpio
+import os, requests, logging
 from threading import Thread
 from time import sleep
 
 from utils import start_daemon, stop_daemon, get_config, str_to_bool
 from vars import PROD_MODE, BASE_DIR
+
+mock_gpio = False
+
+try:
+	mock_gpio = get_config('mock_gpio')
+except KeyError as e:
+	pass
+
+if not mock_gpio:
+	import pigpio
 
 class MPGPIO(object):
 	"""GPIO utilities for our RPi.
@@ -14,7 +24,9 @@ class MPGPIO(object):
 		logging.basicConfig(filename=self.conf['d_files']['gpio']['log'], level=logging.DEBUG)
 
 	def start_gpio(self):
-		self.gpio = pigpio.pi()
+		if not mock_gpio:
+			self.gpio = pigpio.pi()
+
 		self.db.set('GPIO_STATUS', False)
 		
 		start_daemon(self.conf['d_files']['gpio'])
@@ -28,17 +40,18 @@ class MPGPIO(object):
 		receiver_pin = get_config('receiver_pin')
 		self.gpio_mappings.append((receiver_pin, RecieverThread(self.gpio, receiver_pin)))
 
-		for mapping in self.gpio_mappings:
-			sleep(1)
+		if not mock_gpio:
+			for mapping in self.gpio_mappings:
+				sleep(1)
 
-			if mapping[0] != receiver_pin:
-				logging.debug("setting pin %d mapping" % mapping[0])
-				self.gpio.set_mode(mapping[0], pigpio.INPUT)
-			else:
-				# custom mapping for receiver pin...
-				logging.debug("receiver pin set here...")
+				if mapping[0] != receiver_pin:
+					logging.debug("setting pin %d mapping" % mapping[0])
+					self.gpio.set_mode(mapping[0], pigpio.INPUT)
+				else:
+					# custom mapping for receiver pin...
+					logging.debug("receiver pin set here...")
 
-			mapping[1].start()
+				mapping[1].start()
 
 		logging.info("GPIO listening...")
 		self.db.set('GPIO_STATUS', True)
@@ -67,7 +80,9 @@ class GPIOThread(Thread):
 
 	def run(self):
 		while True:
-			self.__parse_state(self.gpio.read(self.pin))
+			if not mock_gpio:
+				self.__parse_state(self.gpio.read(self.pin))
+			
 			sleep(0.01)
 
 	def __parse_state(self, state):
