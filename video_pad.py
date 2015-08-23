@@ -17,7 +17,7 @@ class MPVideoPad():
 			clock.tick(60)
 		
 	def vp_setup(self): 
-		self.screen = pygame.display.set_mode(self.conf['screen_size'])
+		self.screen = pygame.display.set_mode(self.conf['video_pad']['screen_size'])
 
 	def vp_draw(self):
 		pygame.display.flip()
