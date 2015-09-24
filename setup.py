@@ -52,9 +52,6 @@ def update_cdn():
 
 	ftp.quit()
 
-	if "video" in media_manifest:
-		init_video()
-
 def install():
 	# run setup scripts
 	redis_port, api_port = get_config(['redis_port', 'api_port'])
