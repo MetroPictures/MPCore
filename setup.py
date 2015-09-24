@@ -9,7 +9,7 @@ from vars import BASE_DIR, UNPLAYABLE_FILES
 def update_cdn():
 	media_manifest, cdn = get_config(['media_manifest', 'cdn'])
 	# download media from "cdn"
-	if media_manifest is None:
+	if media_manifest is None or len(media_manifest) == 0:
 		media_manifest = ["prompts"]
 	else:
 		media_manifest.append("prompts")
