@@ -25,7 +25,12 @@ def get_config(keys):
 	return None
 
 def str_to_bool(str):
-	return json.loads(str.lower())
+	try:
+		return json.loads(str.lower())
+	except Exception as e:
+		print e, type(e)
+		
+	return False
 
 def start_daemon(d_files):	
 	try:

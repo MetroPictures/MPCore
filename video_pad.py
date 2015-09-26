@@ -5,7 +5,7 @@ class MPVideoPad(object):
 		logging.basicConfig(filename=self.conf['d_files']['vid']['log'])
 
 		# add video pad to routes
-		self.routes.update([
+		self.routes.extend([
 			(r'/video', self.VideoHandler),
 			(r'/video/js/(.*)', tornado.web.StaticFileHandler, \
 				{ 'path' : os.path.join(self.conf['media_dir'], "video", "js")})
@@ -16,4 +16,4 @@ class MPVideoPad(object):
 
 	class VideoHandler(tornado.web.RequestHandler):
 		def get(self):
-			self.render(os.path.join(self.conf['media_dir'], "video", "index.html"))
+			self.render(os.path.join(self.application.conf['media_dir'], "video", "index.html"))
