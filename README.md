@@ -61,7 +61,7 @@ The `custom_test_pad` directive points to the folder where you have your custom 
 
 ### CDN
 
-An [FTP server](https://github.com/MetroPictures/MPCDN) exists to push the necessary files to the sculptures (which are, of course, too large to be hosted here).  Conventionally, each sculpture should have a `prompts` folder (full of mp3s for the IVR to "say").  If the sculpture includes video, a `video` folder is required.
+An [FTP server](https://github.com/MetroPictures/MPCDN) exists to push the necessary files to the sculptures (which are, of course, too large to be hosted here).  Conventionally, each sculpture should have a `prompts` folder (full of mp3s for the IVR to "say").  If the sculpture includes video, a `video` folder is required.  Video is in HTML5, so all assets must be web-compatible.  Assets in this folder will be placed in `media/video/viz` on the sculpture (as the `media/video` folder will hold html and javascript files).
 
 ### Testing Console
 
