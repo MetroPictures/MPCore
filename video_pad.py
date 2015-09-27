@@ -8,7 +8,9 @@ class MPVideoPad(object):
 		self.routes.extend([
 			(r'/video', self.VideoHandler),
 			(r'/video/js/(.*)', tornado.web.StaticFileHandler, \
-				{ 'path' : os.path.join(self.conf['media_dir'], "video", "js")})
+				{ 'path' : os.path.join(self.conf['media_dir'], "video", "js")}),
+			(r'/video/viz/(.*)', tornado.web.StaticFileHandler, \
+				{ 'path' : os.path.join(self.conf['media_dir'], "video", "viz")})
 		])
 
 	def start_video_pad(self):

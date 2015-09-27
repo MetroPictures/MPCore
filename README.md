@@ -71,6 +71,8 @@ You can create your own test pad for additional configurations as well.  Be sure
 
 ### Setup
 
+With a clean RPi, check out [these notes](https://github.com/MetroPictures/MPCore/blob/master/rpi_configuration.md) to configure everything on the hardware.  Then you're ready to install this software.
+
 After cloning, run `git submodule update --init --recursive`.  Then create your config file.  From the root directory run `python core/setup.py`.  Make sure your soundcard works.  Then reboot with `sudo reboot`.  From then on, redis and pigpio will start automatically.
 
 ### Usage
