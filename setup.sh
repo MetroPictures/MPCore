@@ -34,3 +34,5 @@ sudo pip install -r $MODULE_DIR/core/requirements.txt
 # symlink all media
 cd $MODULE_DIR/core/media
 ln -s $MODULE_DIR/media/* .
+
+echo "DISPLAY=localhost:0.0" >> ~/.profile
