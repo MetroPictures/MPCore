@@ -1,43 +1,99 @@
-import os, signal, logging
+import os, signal, logging, pygame, json
 from subprocess import Popen, PIPE
 from time import time, sleep
 from fabric.api import settings, local
 
-from vars import DTMF, MAX_RECORDING_TIME, RATE
+from utils import start_daemon, stop_daemon
+from vars import DTMF, MAX_RECORDING_TIME, RATE, ENDIAN, AUDIO_BIN_SIZE, FRAMERATE
 
-class MPAudioPad(object):
+class MPAudioPad():
 	def __init__(self):
-		logging.basicConfig(filename=self.conf['d_files']['ivr']['log'], level=logging.DEBUG)
+		logging.basicConfig(filename=self.conf['d_files']['audio']['log'], level=logging.DEBUG)
+
+	def start_audio_pad(self, num_channels=2):
+		start_daemon(self.conf['d_files']['audio'])
+
+		audio_receiver = self.db.pubsub()
+		audio_receiver.subscribe(['audio_receiver'])
 		
-	def ap_receive(self, command):
-		if "press" in command.keys() and command['press'] in DTMF:
-			return self.play_tone(command['press'])			
+		pygame.mixer.pre_init(RATE, ENDIAN, num_channels, AUDIO_BIN_SIZE)
+		pygame.init()
 
-		elif "play" in command.keys():
-			return self.play(command['play'])
+		while True:
+			for command in audio_receiver.listen():
+				if not command['data']:
+					continue
 
-		elif "start_recording" in command.keys():
-			return self.start_recording(command['start_recording'])
+				try:
+					command = json.loads(command['data'])
+				except Exception as e:
+					continue
 
-		elif "stop_recording" in command.keys():
-			return self.stop_recording()
-		
+				print "COMMAND: ", command
+				res = { 'command' : command, 'ok' : False }
+
+				if "press" in command.keys():
+					res['ok'] = self.press(command['press'])
+				
+				elif "play" in command.keys():
+					res['ok'] = self.play(command['play'], interruptable=command['interruptable'])
+				
+				elif "start_recording" in command.keys():
+					res['ok'] = self.start_recording(command['start_recording'])
+				
+				elif "stop_recording" in command.keys():
+					res['ok'] = self.stop_recording()
+				
+				elif "stop_audio" in command.keys():
+					res['ok'] = self.stop_audio()
+
+				self.db.publish('audio_responder', json.dumps(res))
+
+	def stop_audio_pad(self):
+		stop_daemon(self.conf['d_files']['audio'])
+
+	def stop_audio(self):
+		pygame.mixer.music.stop()
+		return True
+
+	def pause(self):
+		pygame.mixer.music.pause()
+		return True
+
+	def unpause(self):
+		pygame.mixer.music.unpause()
+		return True
+
+	def play(self, src, interruptable=False):
+		src = os.path.join(self.conf['media_dir'], src)
+
+		try:
+			pygame.mixer.music.load(src)
+			pygame.mixer.music.play()
+
+			logging.debug("streaming sound file %s" % src)
+			return True
+
+		except Exception as e:
+			print e, type(e)
+			logging.error("could not play file %s" % src)
+
 		return False
 
-	def play_tone(self, tone):
-		return self.play_audio(os.path.join(self.conf['media_dir'], "dtmf", "DTMF-%s.wav" % tone))
+	def press(self, tone):
+		return self.play_clip(os.path.join("dtmf", "DTMF-%s.wav" % tone))
 
-	def play(self, src):
-		return self.play_audio(os.path.join(self.conf['media_dir'], src))
+	def play_clip(self, src, channel=None):
+		# TODO: multi-channel
+		src = os.path.join(self.conf['media_dir'], src)
 
-	def play_audio(self, src):
 		try:
-			play_cmd = ["aplay", "-N", "--process-id-file", \
-				self.conf['d_files']['ap_player']['pid'], src]
-
-			logging.debug("CMD: %s" % " ".join(play_cmd))
-			Popen(play_cmd, stdout=PIPE, stderr=PIPE).communicate()
-						
+			audio = pygame.mixer.Sound(src)
+			
+			audio.play()
+			sleep(audio.get_length())
+			logging.debug("playing clip %s (length %d)" % (src, audio.get_length()))
+			
 			return True
 		except Exception as e:
 			print e, type(e)

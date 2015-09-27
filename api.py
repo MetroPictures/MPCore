@@ -49,6 +49,10 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 				},
 				'ap_player' : {
 					'pid' : os.path.join(BASE_DIR, ".monitor", "ap_player.pid.txt")
+				},
+				'audio' : {
+					'pid' : os.path.join(BASE_DIR, ".monitor", "audio.pid.txt"),
+					'log' : os.path.join(BASE_DIR, ".monitor", "%s.log.txt" % rpi_id)
 				}
 			},
 			'api_port' : api_port,
@@ -80,18 +84,21 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	def start(self):
 		logging.info("Start invoked.")
-		
-		MPGPIO.__init__(self)
-		MPIVR.__init__(self)
 
-		p = Process(target=self.start_api)
-		p.start()
+		MPIVR.__init__(self)
+		MPGPIO.__init__(self)
+
+		p = Process(target=self.start_audio_pad)
+		p.start()	
 
 		p = Process(target=self.start_gpio)
 		p.start()
 
+		p = Process(target=self.start_api)
+		p.start()
+
 		while not self.get_gpio_status():
-			sleep(1)
+			sleep(1)		
 
 		logging.info("EVERYTHING IS ONLINE.")
 		return True
@@ -99,8 +106,9 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	def stop(self):
 		logging.info("Stop invoked.")
 
-		self.stop_gpio()
 		self.stop_api()
+		self.stop_gpio()
+		self.stop_audio_pad()
 		
 		logging.info("EVERYTHING IS OFFLINE.")
 		return True
@@ -207,25 +215,10 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	def on_hang_up(self):
 		logging.info("hanging up")
-
+		
+		self.send_command({ 'stop_audio' : True })
 		stop_daemon(self.conf['d_files']['module'])
 		self.db.set('IS_HUNG_UP', True)
-
-		try:
-			if os.path.exists(self.conf['d_files']['ap_player']['pid']):
-				with open(self.conf['d_files']['ap_player']['pid'], 'rb') as PID:
-					current_play_pid = PID.read().strip()
-
-					logging.debug("current_play_pid: %s" % current_play_pid)
-					
-					os.kill(int(current_play_pid), signal.SIGKILL)
-					os.remove(self.conf['d_files']['ap_player']['pid'])
-			else:
-				logging.debug("not currently playing")
-
-		except Exception as e:
-			logging.warning("NO CURRENT PLAY TO KILL")
-			print e, type(e)
 
 		try:
 			current_record_pid = self.db.get("CURRENT_RECORD_PID")

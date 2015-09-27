@@ -22,3 +22,6 @@ UNPLAYABLE_FILES = [".DS_Store", "._.DS_Store"]
 # recording presets
 MAX_RECORDING_TIME = 60
 RATE = 48000
+AUDIO_BIN_SIZE = 2048
+ENDIAN = -16
+FRAMERATE = 30

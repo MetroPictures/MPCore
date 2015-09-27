@@ -4,8 +4,11 @@
 1.	Unzip the install files to your newly-formatted drive:
 	`unzip /path/to/NOOBS.zip -d /path/to/new/drive`
 1.	Unmount the new drive and pop it into the RPi.  Turn it on and install Raspbian.  When this finishes, click "OK" to boot up for the first time.
-1.	In advanced options, **change your root password to something you like.**
+1.	**Change your root password to something you like.**
 1.	In advanced options, **enable SSH.**
+1.	In advanced options, **enable I2C**
+
+At any point, if you need to change these configuations, run `sudo raspi-config`.
 
 #	Update packages
 
@@ -28,3 +31,7 @@
 #	Setup Git
 
 1.	Add your private key to the pi.  Does not have to be at `~/.ssh/id_rsa`, but be sure to update your ssh config file if it's in an alternative directory.
+
+#	Soundcards
+
+1.	Set your USB soundcard as the default.  Edit `/etc/modprob.d/alsa-base.conf` and set the directive `options snd-usb-audio index=-2` to `options snd-usb-audio index=0`.  Save, and this should update on reboot.

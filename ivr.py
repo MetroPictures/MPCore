@@ -17,10 +17,10 @@ class MPIVR(MPAudioPad):
 		logging.basicConfig(filename=self.conf['d_files']['ivr']['log'], level=logging.DEBUG)
 		MPAudioPad.__init__(self)
 
-	def say(self, message):
+	def say(self, message, interruptable=False):
 		logging.debug("saying %s" % message)
 
-		return self.send_command({ 'play' : message })
+		return self.send_command({ 'play' : message, 'interruptable' : interruptable })
 
 	def record(self, message, dst=None, release_keys=DEFAULT_RELEASE_KEY):
 		if dst is None:
@@ -91,6 +91,30 @@ class MPIVR(MPAudioPad):
 		return None
 
 	def send_command(self, command):
-		return { 'ok' : self.ap_receive(command), 'command' : command }
+		audio_responder = self.db.pubsub()
+		audio_responder.subscribe('audio_responder')
+
+		res = { 'ok' : True }
+		self.db.publish('audio_receiver', json.dumps(command))
+
+		while True:
+			response = audio_responder.get_message()
+
+			if response is None or not response['data']:
+				continue
+
+			try:
+				response = json.loads(response['data'])
+			except Exception as e:
+				continue
+
+			if 'ok' in response.keys():
+				res = response
+
+			break
+
+		audio_responder.unsubscribe()
+		logging.debug("Command/Response cycle released: %s" % json.dumps(response))
+		return res
 
 
