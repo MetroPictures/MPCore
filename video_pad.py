@@ -14,7 +14,8 @@ class MPVideoPad(object):
 		])
 
 	def start_video_pad(self):
-		return False
+		# not sure if we're doing anything here...
+		return True
 
 	class VideoHandler(tornado.web.RequestHandler):
 		def get(self):

@@ -94,7 +94,7 @@ class MPIVR(MPAudioPad):
 		audio_responder = self.db.pubsub()
 		audio_responder.subscribe('audio_responder')
 
-		res = { 'ok' : True }
+		res = { 'ok' : False }
 		self.db.publish('audio_receiver', json.dumps(command))
 
 		while True:
