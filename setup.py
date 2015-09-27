@@ -22,9 +22,12 @@ def update_cdn():
 	for mm in media_manifest:
 		out_dir = os.path.join(BASE_DIR, "media", mm)
 		
+		if mm == "video":
+			out_dir = os.path.join(out_dir, "viz")
+		
 		if not os.path.exists(out_dir):
 			os.makedirs(out_dir)
-			print "initialized empty directory \"%s\"" % mm
+			print "initialized empty directory \"%s\" at %s" % (mm, out_dir)
 
 		try:
 			ftp.cwd(mm)
