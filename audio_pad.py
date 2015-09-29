@@ -3,20 +3,30 @@ from subprocess import Popen, PIPE
 from time import time, sleep
 from fabric.api import settings, local
 
-from utils import start_daemon, stop_daemon
-from vars import DTMF, MAX_RECORDING_TIME, RATE, ENDIAN, AUDIO_BIN_SIZE, FRAMERATE
+from utils import start_daemon, stop_daemon, get_config
+from vars import BASE_DIR, DTMF, MAX_RECORDING_TIME, RATE, ENDIAN, AUDIO_BIN_SIZE, FRAMERATE
 
 class MPAudioPad():
 	def __init__(self):
 		logging.basicConfig(filename=self.conf['d_files']['audio']['log'], level=logging.DEBUG)
 
-	def start_audio_pad(self, num_channels=2):
+	def start_audio_pad(self):
 		start_daemon(self.conf['d_files']['audio'])
+
+		audio_config_rc = "2-chan"
+
+		audio_config = get_config('audio_config')
+		if audio_config not in [None, "default"]:
+			audio_config_rc = audio_config
+			
+		with settings(warn_only=True):
+			local("rm ~/.asoundrc")
+			local("ln -s %s ~/.asoundrc" % os.path.join(BASE_DIR, \
+				"core", "lib", "alsa-config", "asoundrc.%s" % audio_config_rc))
 
 		audio_receiver = self.db.pubsub()
 		audio_receiver.subscribe(['audio_receiver'])
 		
-		pygame.mixer.pre_init(RATE, ENDIAN, num_channels, AUDIO_BIN_SIZE)
 		pygame.init()
 
 		while True:
@@ -72,6 +82,16 @@ class MPAudioPad():
 			pygame.mixer.music.play()
 
 			logging.debug("streaming sound file %s" % src)
+
+			if not interruptable:
+				logging.debug("Process will not return result until fully played...")
+
+				while True:
+					if not pygame.mixer.music.get_busy():
+						break
+
+					sleep(0.5)
+
 			return True
 
 		except Exception as e:
