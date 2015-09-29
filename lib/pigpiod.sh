@@ -5,7 +5,7 @@ touch /var/lock/pigpio
 case "$1" in
 	start)
 		echo "starting pigpio"
-		sudo pigpiod
+		sudo pigpiod -s 2
 		;;
 	stop)
 		echo "stopping pigpio"

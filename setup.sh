@@ -28,11 +28,11 @@ make install
 sudo cp $MODULE_DIR/core/lib/pigpiod.sh /etc/init.d/pigpiod
 sudo update-rc.d pigpiod defaults
 
+sudo apt-get install -y i2c-tools python-smbus
+
 # pip install 
 sudo pip install -r $MODULE_DIR/core/requirements.txt
 
 # symlink all media
 cd $MODULE_DIR/core/media
 ln -s $MODULE_DIR/media/* .
-
-echo "DISPLAY=localhost:0.0" >> ~/.profile
