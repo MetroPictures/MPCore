@@ -130,7 +130,9 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 			
 			result = self.application.on_pick_up()
 
-			self.set_status(200 if result['ok'] else 400)
+			if type(result) is dict:
+				self.set_status(200 if result['ok'] else 400)
+
 			self.finish(result)
 
 	class HangUpHandler(tornado.web.RequestHandler):
@@ -139,7 +141,9 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 			
 			result = self.application.on_hang_up()
 
-			self.set_status(200 if result['ok'] else 400)
+			if type(result) is dict:
+				self.set_status(200 if result['ok'] else 400)
+			
 			self.finish(result)
 
 	class MappingHandler(tornado.web.RequestHandler):
@@ -148,39 +152,11 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 			logging.info("pin %d: rpi_id %s" % (pin, self.application.conf['rpi_id']))
 
-			if str_to_bool(self.application.db.get('IS_HUNG_UP')):
-				self.set_status(400)
-				self.finish({ 'ok' : False, 'error' : "Phone is hung up"})
-				return
+			result = self.on_key_pressed(pin)
 
-			# play dmtf tone;
-			command = { "press" : self.application.map_pin_to_tone(pin) }
+			if type(result) is dict:
+				self.set_status(200 if result['ok'] else 400)
 			
-			mode = int(self.application.db.get('MODE'))
-			logging.info("CURRENT MODE: %d" % mode)
-
-			if mode == GATHER_MODE:
-				logging.info("THIS IS A GATHER: %d" % pin)
-
-				try:
-					gathered_keys = json.loads(self.application.db.get('gathered_keys'))
-					print gathered_keys
-				except Exception as e:
-					logging.warning("could not get gathered_keys: ")
-					
-					if PROD_MODE == "debug":
-						print e, type(e)
-
-					gathered_keys = []
-
-				gathered_keys += [pin]
-				self.application.db.set('gathered_keys', json.dumps(gathered_keys))
-			else:
-				self.application.on_key_pressed(pin)
-			
-			result = self.application.send_command(command)
-
-			self.set_status(200 if result['ok'] else 400)
 			self.finish(result)
 
 	def map_pin_to_tone(self, pin):
@@ -196,7 +172,33 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		return tone
 
 	def on_key_pressed(self, key):
-		logging.info("on key pressed: %d" % key)
+		if str_to_bool(self.db.get('IS_HUNG_UP')):
+			return { 'ok' : False, 'error' : "Phone is hung up" }
+
+		# play dmtf tone;
+		command = { "press" : self.map_pin_to_tone(pin) }
+		
+		mode = int(self.db.get('MODE'))
+		logging.info("CURRENT MODE: %d" % mode)
+
+		if mode == GATHER_MODE:
+			logging.info("THIS IS A GATHER: %d" % pin)
+
+			try:
+				gathered_keys = json.loads(self.db.get('gathered_keys'))
+				print gathered_keys
+			except Exception as e:
+				logging.warning("could not get gathered_keys: ")
+				
+				if PROD_MODE == "debug":
+					print e, type(e)
+
+				gathered_keys = []
+
+			gathered_keys += [pin]
+			self.db.set('gathered_keys', json.dumps(gathered_keys))
+
+		return self.send_command(command)
 
 	def reset_for_call(self):
 		self.db.set('IS_HUNG_UP', False)
@@ -253,11 +255,34 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		try:
 			server.bind(self.conf['api_port'])
 		except Exception as e:
+			import re
 			from fabric.api import settings, local
 			from fabric.context_managers import hide
+			from vars import KILL_RX, NO_KILL_RX
 
 			with settings(hide('everything'), warn_only=True):
-				local("kill $(lsof -t -i:%d)" % self.conf['api_port'])
+				print "killing whatever is on port %d" % self.conf['api_port']
+				
+				kill_list = local("ps -ef | grep %s.py" % self.conf['rpi_id'], capture=True)
+				for k in [k.strip() for k in kill_list.splitlines()]:
+					
+					for r in NO_KILL_RX:						
+						if re.match(r, k) is not None:
+							continue
+
+					# TODO: does this work on rpi, too? (should...)
+					has_tty = [t for t in k.split(" ") if len(t) != 0][5]
+					if re.match(r'pts/0', has_tty):
+						continue
+
+					pid = re.findall(re.compile(KILL_RX % self.conf['rpi_id']), k)
+					if len(pid) == 1 and len(pid[0]) >= 1:
+						try:
+							pid = int(pid[0])
+						except Exception as e:
+							continue
+
+					local("kill -9 %d" % pid)
 
 			server.bind(self.conf['api_port'])
 

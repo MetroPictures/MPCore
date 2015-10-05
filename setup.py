@@ -7,6 +7,11 @@ from utils import get_config
 from vars import BASE_DIR, UNPLAYABLE_FILES
 
 def update_cdn():
+	use_cdn = get_config("use_cdn")
+	if use_cdn is not None and use_cdn is False:
+		print "Not pulling from cdn!"
+		return
+
 	media_manifest, cdn = get_config(['media_manifest', 'cdn'])
 	# download media from "cdn"
 	if media_manifest is None or len(media_manifest) == 0:
@@ -57,7 +62,7 @@ def update_cdn():
 
 def install():
 	# run setup scripts
-	redis_port, api_port = get_config(['redis_port', 'api_port'])
+	redis_port, api_port, mock_gpio = get_config(['redis_port', 'api_port', 'mock_gpio'])
 	if 8888 in [redis_port, api_port]:
 		print "HEY, WAIT!  Port 8888 is reserved for another purpose (the GPIO).\nEdit your config and run setup.py again."
 		return
@@ -70,7 +75,7 @@ def install():
 	except Exception as e:
 		pass
 
-	run = Popen(['core/setup.sh', BASE_DIR, str(redis_port)])
+	run = Popen(['core/setup.sh', BASE_DIR, str(redis_port), str(-1 if mock_gpio else 1)])
 	run.communicate()
 
 	# modify redis config

@@ -25,3 +25,10 @@ RATE = 48000
 AUDIO_BIN_SIZE = 2048
 ENDIAN = -16
 FRAMERATE = 30
+
+NO_KILL_RX = [
+	r".*\d{1,2}:\d{2}[:|\.]\d{2}\s+/bin/sh",
+	r".*\d{1,2}:\d{2}[:|\.]\d{2}\s+grep"
+]
+
+KILL_RX = r"(?:\d{3,4}|[a-zA-Z0-9_\-\+]{1,8})\s+(\d{2,6}).*%s\.py"

@@ -1,10 +1,14 @@
-import os, signal, logging, pygame, json
+import os, signal, logging, json
 from subprocess import Popen, PIPE
 from time import time, sleep
 from fabric.api import settings, local
 
 from utils import start_daemon, stop_daemon, get_config
 from vars import BASE_DIR, DTMF, MAX_RECORDING_TIME, RATE, ENDIAN, AUDIO_BIN_SIZE, FRAMERATE
+
+twilio_audio = get_config('twilio_audio')
+if twilio_audio is None:
+	import pygame
 
 class MPAudioPad():
 	def __init__(self):
