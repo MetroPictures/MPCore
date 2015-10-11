@@ -31,6 +31,7 @@ class MPAudioPad():
 		audio_receiver = self.db.pubsub()
 		audio_receiver.subscribe(['audio_receiver'])
 		
+		pygame.mixer.pre_init(frequency=RATE, size=ENDIAN, channels=2, buffer=AUDIO_BIN_SIZE)
 		pygame.init()
 
 		while True:
@@ -91,6 +92,7 @@ class MPAudioPad():
 				logging.debug("Process will not return result until fully played...")
 
 				while True:
+					# signal for grand interrupt, though
 					if not pygame.mixer.music.get_busy():
 						break
 

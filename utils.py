@@ -28,7 +28,7 @@ def str_to_bool(str):
 	try:
 		return json.loads(str.lower())
 	except Exception as e:
-		print e, type(e)
+		pass
 		
 	return False
 
