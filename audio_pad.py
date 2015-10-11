@@ -6,8 +6,7 @@ from fabric.api import settings, local
 from utils import start_daemon, stop_daemon, get_config
 from vars import BASE_DIR, DTMF, MAX_RECORDING_TIME, RATE, ENDIAN, AUDIO_BIN_SIZE, FRAMERATE
 
-twilio_audio = get_config('twilio_audio')
-if twilio_audio is None:
+if get_config('use_audio') in [None, True]:
 	import pygame
 
 class MPAudioPad():
@@ -51,7 +50,7 @@ class MPAudioPad():
 					res['ok'] = self.press(command['press'])
 				
 				elif "play" in command.keys():
-					res['ok'] = self.play(command['play'], interruptable=command['interruptable'])
+					res['ok'] = self.play(command['play'])
 				
 				elif "start_recording" in command.keys():
 					res['ok'] = self.start_recording(command['start_recording'])
@@ -79,7 +78,7 @@ class MPAudioPad():
 		pygame.mixer.music.unpause()
 		return True
 
-	def play(self, src, interruptable=False):
+	def play(self, src):
 		src = os.path.join(self.conf['media_dir'], src)
 
 		try:
@@ -87,16 +86,6 @@ class MPAudioPad():
 			pygame.mixer.music.play()
 
 			logging.debug("streaming sound file %s" % src)
-
-			if not interruptable:
-				logging.debug("Process will not return result until fully played...")
-
-				while True:
-					# signal for grand interrupt, though
-					if not pygame.mixer.music.get_busy():
-						break
-
-					sleep(0.5)
 
 			return True
 
