@@ -86,6 +86,10 @@ class GPIOThread(Thread):
 			sleep(0.01)
 
 	def __parse_state(self, state):
+		print self.pin, " : ", state
+		pass
+
+	def __parse_i2c_state(self, gpio, level, tick):
 		pass
 
 	def __send(self, endpoint):
@@ -108,6 +112,9 @@ class RecieverThread(GPIOThread):
 		super(RecieverThread, self).__parse_state(state)
 		# decide if it's pick up or hang up
 
+	def __parse_i2c_state(self, gpio, level, tick):
+		super(RecieverThread, self).__parse_i2c_state(gpio, level, tick)
+
 	def __on_hang_up(self):
 		super(RecieverThread, self).__send("hang_up")
 
@@ -121,6 +128,9 @@ class ButtonThread(GPIOThread):
 	def __parse_state(self, state):
 		super(ButtonThread, self).__parse_state(state)
 		# do logics?
+
+	def __parse_i2c_state(self, gpio, level, tick):
+		super(RecieverThread, self).__parse_i2c_state(gpio, level, tick)
 
 	def __on_button_press(self):
 		super(ButtonThread, self).__send("mapping/%d" % self.pin)
