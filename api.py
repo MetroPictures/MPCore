@@ -152,21 +152,21 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 			logging.info("pin %d: rpi_id %s" % (pin, self.application.conf['rpi_id']))
 
-			result = self.on_key_pressed(pin)
+			result = self.application.on_key_pressed(pin)
 
 			if type(result) is dict:
 				self.set_status(200 if result['ok'] else 400)
 			
 			self.finish(result)
 
-	def map_pin_to_tone(self, pin):
-		if pin not in [12, 13, 14]:
-			tone = str(pin - 2)
-		elif pin == 12:
+	def map_key_to_tone(self, key):
+		if key not in [12, 13, 14]:
+			tone = str(key - 2)
+		elif key == 12:
 			tone = 's'
-		elif pin == 13:
+		elif key == 13:
 			tone = str(0)
-		elif pin == 14:
+		elif key == 14:
 			tone = 'p'
 		 
 		return tone
@@ -176,13 +176,13 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 			return { 'ok' : False, 'error' : "Phone is hung up" }
 
 		# play dmtf tone;
-		command = { "press" : self.map_pin_to_tone(pin) }
+		command = { "press" : self.map_key_to_tone(key) }
 		
 		mode = int(self.db.get('MODE'))
 		logging.info("CURRENT MODE: %d" % mode)
 
 		if mode == GATHER_MODE:
-			logging.info("THIS IS A GATHER: %d" % pin)
+			logging.info("THIS IS A GATHER: %d" % key)
 
 			try:
 				gathered_keys = json.loads(self.db.get('gathered_keys'))
@@ -195,7 +195,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 				gathered_keys = []
 
-			gathered_keys += [pin]
+			gathered_keys += [key]
 			self.db.set('gathered_keys', json.dumps(gathered_keys))
 
 		return self.send_command(command)
@@ -243,6 +243,28 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	def run_script(self):
 		start_daemon(self.conf['d_files']['module'])
 
+	def build_key_map(self, route):
+		return [c[0] for c in self.key_mappings[route]]
+
+	def find_next_route(self, route, choice):
+		try:
+			return [c[1] for c in self.key_mappings[route] if c[0] == choice][0]
+		except Exception as e:
+			print e, type(e)
+
+		return None
+
+	def route_loop(self, route):
+		logging.info(route)
+
+		choice = self.prompt(os.path.join("prompts", "%s.wav" % route), self.build_key_map(route))
+		next_route = self.find_next_route(route, choice)
+
+		if next_route is not None:
+			return self.route_loop(next_route)
+		
+		return False
+
 	def start_api(self):
 		"""Starts API, initializes the redis database, and daemonizes all processes so they may be restarted or stopped.
 		"""
@@ -272,7 +294,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 					# TODO: does this work on rpi, too? (should...)
 					has_tty = [t for t in k.split(" ") if len(t) != 0][5]
-					if re.match(r'pts/0', has_tty):
+					if re.match(r'pts/\d+', has_tty):
 						continue
 
 					pid = re.findall(re.compile(KILL_RX % self.conf['rpi_id']), k)
