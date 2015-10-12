@@ -34,7 +34,6 @@ class MPGPIO(object):
 			self.gpio_mappings = [ButtonThread(pin) for pin in self.gpio_mappings]
 		
 		# default mappings for receiver (pick-up/hang-up)
-		receiver_pins = get_config('receiver_pins')
 		self.gpio_mappings.append(RecieverThread())
 
 		for mapping in self.gpio_mappings:
@@ -97,6 +96,7 @@ class RecieverThread(GPIOThread):
 		print "ambient light is ", self.gpio.read_ambient()
 
 		# and decide whether to pickup or hang up based on this...
+		# might need to set values in config to declare threshold per sculpture
 
 	def __on_hang_up(self):
 		super(RecieverThread, self).__send("hang_up")
