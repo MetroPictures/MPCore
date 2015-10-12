@@ -10,10 +10,7 @@ mock_gpio = False
 try:
 	mock_gpio = get_config('mock_gpio')
 except KeyError as e:
-	pass
-
-if not mock_gpio:
-	import pigpio
+	pass	
 
 class MPGPIO(object):
 	"""GPIO utilities for our RPi.
@@ -24,43 +21,31 @@ class MPGPIO(object):
 		logging.basicConfig(filename=self.conf['d_files']['gpio']['log'], level=logging.DEBUG)
 
 	def start_gpio(self):
-		if not mock_gpio:
-			self.gpio = pigpio.pi()
+		if mock_gpio:
+			logging.info("starting mocked gpio.")
+			return 
 
-		self.db.set('GPIO_STATUS', False)
-		
 		start_daemon(self.conf['d_files']['gpio'])
 
 		if self.gpio_mappings is None:
 			self.gpio_mappings = []
 		else:
-			self.gpio_mappings = [(pin, ButtonThread(self.gpio, pin)) for pin in self.gpio_mappings]
-
+			self.gpio_mappings = [ButtonThread(pin) for pin in self.gpio_mappings]
+		
 		# default mappings for receiver (pick-up/hang-up)
-		receiver_pin = get_config('receiver_pin')
-		self.gpio_mappings.append((receiver_pin, RecieverThread(self.gpio, receiver_pin)))
+		receiver_pins = get_config('receiver_pins')
+		self.gpio_mappings.append(RecieverThread())
 
-		if not mock_gpio:
-			for mapping in self.gpio_mappings:
-				sleep(1)
-
-				if mapping[0] != receiver_pin:
-					logging.debug("setting pin %d mapping" % mapping[0])
-					self.gpio.set_mode(mapping[0], pigpio.INPUT)
-				else:
-					# custom mapping for receiver pin...
-					logging.debug("receiver pin set here...")
-
-				mapping[1].start()
+		for mapping in self.gpio_mappings:
+			mapping.start()
 
 		logging.info("GPIO listening...")
 		self.db.set('GPIO_STATUS', True)
 
 	def stop_gpio(self):
-		try:
-			self.gpio.stop()
-		except Exception as e:
-			pass
+		if mock_gpio:
+			logging.info("stopping mocked gpio.")
+			return 
 
 		stop_daemon(self.conf['d_files']['gpio'])
 		self.db.set('GPIO_STATUS', False)
@@ -72,24 +57,15 @@ class MPGPIO(object):
 		return str_to_bool(self.db.get('GPIO_STATUS'))
 
 class GPIOThread(Thread):
-	def __init__(self, gpio, pin):
+	def __init__(self):
 		Thread.__init__(self)
-
-		self.gpio = gpio
-		self.pin = pin
 
 	def run(self):
 		while True:
-			if not mock_gpio:
-				self.__parse_state(self.gpio.read(self.pin))
-			
-			sleep(0.01)
+			self.__parse_state()
+			sleep(0.5)
 
-	def __parse_state(self, state):
-		print self.pin, " : ", state
-		pass
-
-	def __parse_i2c_state(self, gpio, level, tick):
+	def __parse_state(self):
 		pass
 
 	def __send(self, endpoint):
@@ -105,32 +81,35 @@ class GPIOThread(Thread):
 				print e, type(e)
 
 class RecieverThread(GPIOThread):
-	def __init__(self, gpio, pin):
-		GPIOThread.__init__(self, gpio, pin)
+	def __init__(self):
+		GPIOThread.__init__(self)
+		from adafruit import VCNL4010
 
-	def __parse_state(self, state):
-		super(RecieverThread, self).__parse_state(state)
-		# decide if it's pick up or hang up
+		self.gpio = VCNL4010()
+		self.gpio.continuous_conversion_on()
 
-	def __parse_i2c_state(self, gpio, level, tick):
-		super(RecieverThread, self).__parse_i2c_state(gpio, level, tick)
+	def __parse_state(self):
+		super(RecieverThread, self).__parse_state()
+		
+		print "prox is ", self.gpio.read_proximity()
+		print "ambient light is ", self.gpio.read_ambient()
+
+		# and decide whether to pickup or hang up based on this...
 
 	def __on_hang_up(self):
 		super(RecieverThread, self).__send("hang_up")
 
-	def __on_pick_up(self, pin):
+	def __on_pick_up(self):
 		super(RecieverThread, self).__send("pick_up")
 
 class ButtonThread(GPIOThread):
-	def __init__(self, gpio, pin):
-		GPIOThread.__init__(self, gpio, pin)
+	def __init__(self, pin):
+		self.pin = pin
+		GPIOThread.__init__(self)
 
-	def __parse_state(self, state):
-		super(ButtonThread, self).__parse_state(state)
+	def __parse_state(self):
+		super(ButtonThread, self).__parse_state()
 		# do logics?
-
-	def __parse_i2c_state(self, gpio, level, tick):
-		super(RecieverThread, self).__parse_i2c_state(gpio, level, tick)
 
 	def __on_button_press(self):
 		super(ButtonThread, self).__send("mapping/%d" % self.pin)
