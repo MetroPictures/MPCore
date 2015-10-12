@@ -23,6 +23,7 @@ class MPGPIO(object):
 	def start_gpio(self):
 		if mock_gpio:
 			logging.info("starting mocked gpio.")
+			self.db.set('GPIO_STATUS', True)
 			return 
 
 		start_daemon(self.conf['d_files']['gpio'])
@@ -45,6 +46,7 @@ class MPGPIO(object):
 	def stop_gpio(self):
 		if mock_gpio:
 			logging.info("stopping mocked gpio.")
+			self.db.set('GPIO_STATUS', False)
 			return 
 
 		stop_daemon(self.conf['d_files']['gpio'])
@@ -83,7 +85,7 @@ class GPIOThread(Thread):
 class RecieverThread(GPIOThread):
 	def __init__(self):
 		GPIOThread.__init__(self)
-		from adafruit import VCNL4010
+		from adafruit.VCNL4010 import VCNL4010
 
 		self.gpio = VCNL4010()
 		self.gpio.continuous_conversion_on()
