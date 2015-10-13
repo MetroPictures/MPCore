@@ -5,3 +5,5 @@ config.json
 
 media/*
 !media/dtmf
+
+adafruit/test_ir.py

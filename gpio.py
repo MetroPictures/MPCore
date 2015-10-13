@@ -62,11 +62,14 @@ class GPIOThread(Thread):
 		Thread.__init__(self)
 
 	def run(self):
+		logging.debug("GPIO THREAD STARTED...")
+
 		while True:
 			self.__parse_state()
 			sleep(0.5)
 
 	def __parse_state(self):
+		logging.debug("parsing GPIO state...")
 		pass
 
 	def __send(self, endpoint):
@@ -92,8 +95,8 @@ class RecieverThread(GPIOThread):
 	def __parse_state(self):
 		super(RecieverThread, self).__parse_state()
 		
-		print "prox is ", self.gpio.read_proximity()
-		print "ambient light is ", self.gpio.read_ambient()
+		logging.debug("proximity is %d" % self.gpio.read_proximity())
+		logging.debug("ambient light is %d" % self.gpio.read_ambient())
 
 		# and decide whether to pickup or hang up based on this...
 		# might need to set values in config to declare threshold per sculpture

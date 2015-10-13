@@ -20,8 +20,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	"""
 	
 	def __init__(self):
-		print("init MPSAPI")
-
 		api_port, num_processes, redis_port, rpi_id, custom_test_pad = \
 			get_config(['api_port', 'num_processes', 'redis_port', 'rpi_id', 'custom_test_pad'])
 
