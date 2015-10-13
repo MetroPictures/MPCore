@@ -30,7 +30,6 @@ Config files should be called `config.json` and be placed in the root directory.
 	"api_port" : 8080,
 	"num_processes" : 3,
 	"redis_port" : 6379,
-	"receiver_pins" : [0, 1],
 	"media_manifest" : [
 		"video",
 		"confessions",
@@ -50,8 +49,6 @@ Config files should be called `config.json` and be placed in the root directory.
 The `rpi_id` directive is a short code for the Raspberry Pi running the sculpture.  Alphanumeric, no spaces or special characters.
 
 The `api_port` directive corresponds to the ports python is listening on.  The `redis_port` directive should be self-explainatory.  These should NOT be set to 8888, because the GPIO requires that port to be free.
-
-The `receiver_pins` directive is the GPIO pins (SCL, SDA) that registers someone picking up or hanging up the "phone".  (Other pins are mapped in the corresponding python module.)
 
 The `media_manifest` directive is an array referring to the folders that will hold media.  All of these folders will be created on setup, regardless of whether they contain media.  During setup, any files destined for those folders will be pulled down from the FTP server.
 

@@ -56,7 +56,7 @@ class GPIOThread(Thread):
 		logging.debug("GPIO THREAD STARTED...")
 
 		while True:
-			self.__parse_state()
+			self.parse_state()
 			sleep(0.005)
 
 	def terminate(self):
@@ -78,16 +78,26 @@ class GPIOThread(Thread):
 			if PROD_MODE == "debug":
 				print e, type(e)
 
-class IRRecieverThread(GPIOThread):
+class ReceiverThread(GPIOThread):
 	def __init__(self):
 		GPIOThread.__init__(self)
+
+	def on_hang_up(self):
+		super(ReceiverThread, self).send("hang_up")
+
+	def on_pick_up(self):
+		super(ReceiverThread, self).send("pick_up")
+
+class IRReceiverThread(ReceiverThread):
+	def __init__(self):
+		ReceiverThread.__init__(self)
 		from interact.VCNL4010 import VCNL4010
 
 		self.gpio = VCNL4010()
 		self.gpio.continuous_conversion_on()
 
 	def parse_state(self):
-		super(RecieverThread, self).parse_state()
+		super(ReceiverThread, self).parse_state()
 		
 		logging.debug("proximity is %d" % self.gpio.read_proximity())
 		logging.debug("ambient light is %d" % self.gpio.read_ambient())
@@ -95,31 +105,41 @@ class IRRecieverThread(GPIOThread):
 		# and decide whether to pickup or hang up based on this...
 		# might need to set values in config to declare threshold per sculpture
 
-	def __on_hang_up(self):
-		super(RecieverThread, self).send("hang_up")
+class HallEffectReceiverThread(ReceiverThread):
+	def __init__(self, pin):
+		ReceiverThread.__init__(self)
+		from interact.MomentarySwitch import MomentarySwitch
 
-	def __on_pick_up(self):
-		super(RecieverThread, self).send("pick_up")
+		self.gpio = MomentarySwitch(pin, False, \
+			callback=self.on_pick_up, release_callback=self.on_hang_up, bouncetime=0)
+
+	def on_pick_up(self, gpio, level, tick):
+		logging.debug("Hall Effect Pickup: (level: %s, tick: %s)" % (str(level), str(tick)))
+		super(ReceiverThread, self).on_pick_up()
+
+	def on_hang_up(self, gpio, level, tick):
+		logging.debug("Hall Effect Hangup: (level: %s, tick: %s)" % (str(level), str(tick)))
+		super(ReceiverThread, self).on_hang_up()
+
+	def terminate(self):
+		self.gpio.pig.stop()
+		super(HallEffectReceiverThread, self).terminate()
 
 class ButtonThread(GPIOThread):
 	def __init__(self, pin):
 		GPIOThread.__init__(self)
 		from interact.MomentarySwitch import MomentarySwitch
 
-		self.gpio = MomentarySwitch(pin, True, self.parse_state)
+		self.gpio = MomentarySwitch(pin, True, self.on_button_press)
 
-	def parse_state(self, gpio, level, tick):
-		super(ButtonThread, self).parse_state()
-
+	def on_button_press(self, gpio, level, tick):
 		logging.debug("Simple button pressed! (level: %s, tick: %s)" % (str(level), str(tick)))
-		self.__on_button_press()
+		super(ButtonThread, self).send("mapping/%d" % self.gpio.pin)
 
 	def terminate(self):
 		self.gpio.pig.stop()
 		super(ButtonThread, self).terminate()
 
-	def __on_button_press(self):
-		super(ButtonThread, self).send("mapping/%d" % self.gpio.pin)
 
 class MatrixKeypadThread(GPIOThread):
 	def __init__(self, columm_pins, row_pins):
@@ -136,13 +156,13 @@ class MatrixKeypadThread(GPIOThread):
 			return 
 
 		logging.debug("MatrixKeypad key pressed: %d" % key_pressed)
-		self.__on_key_press(key_pressed)
+		self.on_key_press(key_pressed)
+
+	def on_key_press(self, key):
+		super(MatrixKeypadThread, self).send("mapping/%d" % key)
 
 	def terminate(self):
 		self.gpio.pig.stop()
 		super(MatrixKeypadThread, self).terminate()
-
-	def __on_key_press(self, key):
-		super(MatrixKeypadThread, self).send("mapping/%d" % key)
 
 

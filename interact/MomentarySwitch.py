@@ -32,7 +32,7 @@ class MomentarySwitch():
 		self.listen_for_press.cancel()
 		self.listen_for_release.cancel()
 
-	def debounce(bouncetime, func, *args, **kwargs):
+	def debounce(self, bouncetime, func, *args, **kwargs):
 		time_now = time()
 
 		if(time_now - self.time_stamp) >= bouncetime:
