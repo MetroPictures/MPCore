@@ -61,6 +61,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 		if custom_test_pad is not None:
 			self.test_pad_dir = os.path.join(BASE_DIR, custom_test_pad)
+			print "CUSTOM TEST PAD: %s" % self.test_pad_dir
 		else:
 			self.test_pad_dir = os.path.join(BASE_DIR, "core", "test_pad")
 

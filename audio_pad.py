@@ -11,21 +11,19 @@ if get_config('use_audio') in [None, True]:
 
 class MPAudioPad():
 	def __init__(self):
+		self.split_chan = False
+		
+		if get_config('split_audio_channels'):
+			self.split_chan = True
+
 		logging.basicConfig(filename=self.conf['d_files']['audio']['log'], level=logging.DEBUG)
 
 	def start_audio_pad(self):
 		start_daemon(self.conf['d_files']['audio'])
-
-		audio_config_rc = "2-chan"
-
-		audio_config = get_config('audio_config')
-		if audio_config not in [None, "default"]:
-			audio_config_rc = audio_config
 			
 		with settings(warn_only=True):
 			local("rm ~/.asoundrc")
-			local("ln -s %s ~/.asoundrc" % os.path.join(BASE_DIR, \
-				"core", "lib", "alsa-config", "asoundrc.%s" % audio_config_rc))
+			local("ln -s %s ~/.asoundrc" % os.path.join(BASE_DIR, "core", "lib", "alsa-config", "asoundrc"))
 
 		audio_receiver = self.db.pubsub()
 		audio_receiver.subscribe(['audio_receiver'])
@@ -59,32 +57,39 @@ class MPAudioPad():
 					res['ok'] = self.stop_recording()
 				
 				elif "stop_audio" in command.keys():
-					res['ok'] = self.stop_audio()
+					res['ok'] = self.stop_audio(channel=0) and self.stop_audio(channel=1)
 
 				self.db.publish('audio_responder', json.dumps(res))
 
 	def stop_audio_pad(self):
 		stop_daemon(self.conf['d_files']['audio'])
 
-	def stop_audio(self):
-		pygame.mixer.music.stop()
+	def stop_audio(self, channel=0):
+		channel = pygame.mixer.Channel(channel)
+		channel.stop()
 		return True
 
-	def pause(self):
-		pygame.mixer.music.pause()
+	def pause(self, channel=0):
+		channel = pygame.mixer.Channel(channel)
+		channel.pause()
 		return True
 
-	def unpause(self):
-		pygame.mixer.music.unpause()
+	def unpause(self, channel=0):
+		channel = pygame.mixer.Channel(channel)
+		channel.unpause()
 		return True
 
 	def play(self, src):
 		src = os.path.join(self.conf['media_dir'], src)
 
 		try:
-			pygame.mixer.music.load(src)
-			pygame.mixer.music.play()
+			audio = pygame.mixer.Sound(src)
+			channel = pygame.mixer.Channel(0)
+		
+			if self.split_chan:
+				channel.set_volume(1, 0)
 
+			channel.play(audio)
 			logging.debug("streaming sound file %s" % src)
 
 			return True
@@ -98,15 +103,21 @@ class MPAudioPad():
 	def press(self, tone):
 		return self.play_clip(os.path.join("dtmf", "DTMF-%s.wav" % tone))
 
-	def play_clip(self, src, channel=None):
-		# TODO: multi-channel
+	def play_clip(self, src, channel=None, interruptable=False):
 		src = os.path.join(self.conf['media_dir'], src)
 
 		try:
 			audio = pygame.mixer.Sound(src)
+			channel = pygame.mixer.Channel(1)
+
+			if self.split_chan:
+				channel.set_volume(0, 1)
 			
-			audio.play()
-			sleep(audio.get_length())
+			channel.play(audio)
+
+			if not interruptable:
+				sleep(audio.get_length())
+			
 			logging.debug("playing clip %s (length %d)" % (src, audio.get_length()))
 			
 			return True
