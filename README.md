@@ -41,7 +41,16 @@ Config files should be called `config.json` and be placed in the root directory.
 		"user" : "anonymous",
 		"home_dir" : "EchoPriest"
 	},
-	"custom_test_pad" : "echo_priest"
+	"custom_test_pad" : "echo_priest",
+	"gpio_mappings" : {
+		"receiver" : {
+			"type" : "IRReceiverThread"
+		},
+		"buttons" : {
+			"type" : "ButtonThread",
+			"pins" : [6, 13, 19, 26]
+		}
+	}
 }
 
 ```
@@ -55,6 +64,8 @@ The `media_manifest` directive is an array referring to the folders that will ho
 The `cdn_directive` is an object that describes how to connect to the FTP server.  The `home_dir` directive here is the root folder containing the sculpture's files.  So far, only anonymous connections are supported.
 
 The `custom_test_pad` directive points to the folder where you have your custom test pad.  See the original one for an example of how it's written.
+
+The `gpio_mappings` directive corresponds to the type of receiver and buttons used in the sculpture.  `type` must correspond to one of the 4 component classes we work with (IR, hall effect, matrix keypad, or simple button).  The IRReceiver does not require a pin, but the others do.
 
 ### CDN
 

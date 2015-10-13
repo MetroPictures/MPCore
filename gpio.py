@@ -25,7 +25,6 @@ class MPGPIO():
 			self.db.set('GPIO_STATUS', True)
 			return
 
-
 		gpio_mappings = get_config('gpio_mappings')
 		receiver = globals()[gpio_mappings['receiver']['type']]()
 		buttons = [globals()[gpio_mappings['buttons']['type']](pin) \
