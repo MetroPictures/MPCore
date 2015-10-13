@@ -114,10 +114,14 @@ class ButtonThread(GPIOThread):
 		logging.debug("Simple button pressed! (level: %s, tick: %s)" % (str(level), str(tick)))
 		self.__on_button_press()
 
+	def terminate(self):
+		self.gpio.pig.stop()
+		super(ButtonThread, self).terminate()
+
 	def __on_button_press(self):
 		super(ButtonThread, self).send("mapping/%d" % self.gpio.pin)
 
-class MatrixKeypad(GPIOThread):
+class MatrixKeypadThread(GPIOThread):
 	def __init__(self, columm_pins, row_pins):
 		GPIOThread.__init__(self)
 		from interact.MatrixKeypad import MatrixKeypad
@@ -125,7 +129,7 @@ class MatrixKeypad(GPIOThread):
 		self.gpio = MatrixKeypad(columm_pins, row_pins)
 		
 	def parse_state(self):
-		super(MatrixKeypad, self).parse_state()
+		super(MatrixKeypadThread, self).parse_state()
 
 		key_pressed = self.gpio.getKey()
 		if key_pressed is None:
@@ -135,10 +139,10 @@ class MatrixKeypad(GPIOThread):
 		self.__on_key_press(key_pressed)
 
 	def terminate(self):
-		super(MatrixKeypad, self).terminate()
 		self.gpio.pig.stop()
+		super(MatrixKeypadThread, self).terminate()
 
 	def __on_key_press(self, key):
-		super(MatrixKeypad, self).send("mapping/%d" % key)
+		super(MatrixKeypadThread, self).send("mapping/%d" % key)
 
 
