@@ -48,10 +48,8 @@ class VCNL4010():
 
 		self.i2c.write8(self.VCNL4010_IRLED, 5)
 		current = self.i2c.readU8(self.VCNL4010_IRLED)
-		print "we think current is set to ", current
 
 		sig_freq = self.i2c.readU8(self.VCNL4010_MODTIMING)
-		print "we think sig_freq is ", sig_freq
 
 	def set_LED_current(self, current):
 		if current > 20 or current < 0:

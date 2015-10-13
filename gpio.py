@@ -1,5 +1,5 @@
-import os, requests, logging
-from threading import Thread
+import os, requests, logging, threading
+from multiprocessing import Process
 from time import sleep
 
 from utils import start_daemon, stop_daemon, get_config, str_to_bool
@@ -23,12 +23,20 @@ class MPGPIO():
 		if mock_gpio:
 			logging.info("starting mocked gpio.")
 			self.db.set('GPIO_STATUS', True)
-			return 
+			return
 
-		start_daemon(self.conf['d_files']['gpio'])
 
-		for mapping in self.gpio_mappings:
-			mapping.start()
+		gpio_mappings = get_config('gpio_mappings')
+		receiver = globals()[gpio_mappings['receiver']['type']]()
+		buttons = [globals()[gpio_mappings['buttons']['type']](pin) \
+			for pin in gpio_mappings['buttons']['pins']]
+
+		for m, mapping in enumerate([receiver] + buttons):
+			d_files = {'log' : self.conf['d_files']['gpio']['log'], \
+				'pid' : os.path.join(BASE_DIR, ".monitor", "gpio_%d.pid.txt" % m)}
+			
+			p = Process(target=mapping.run, args=(self.conf['api_port'], d_files,))
+			p.start()
 
 		logging.info("GPIO listening...")
 		self.db.set('GPIO_STATUS', True)
@@ -37,22 +45,30 @@ class MPGPIO():
 		if mock_gpio:
 			logging.info("stopping mocked gpio.")
 			self.db.set('GPIO_STATUS', False)
-			return 
+			return
 
-		stop_daemon(self.conf['d_files']['gpio'])
+		gpio_mappings = get_config('gpio_mappings')
+		for m in xrange(1 + len(gpio_mappings['buttons']['pins'])):
+			d_files = {'log' : self.conf['d_files']['gpio']['log'], \
+				'pid' : os.path.join(BASE_DIR, ".monitor", "gpio_%d.pid.txt" % m)}
+
+			stop_daemon(d_files)
+
 		self.db.set('GPIO_STATUS', False)
-		
 		logging.info("GPIO Stopped")
 
 	def get_gpio_status(self):
 		# maybe this will be something more substantial...
 		return str_to_bool(self.db.get('GPIO_STATUS'))
 
-class GPIOThread(Thread):
+class GPIOThread(threading.Thread):
 	def __init__(self):
-		Thread.__init__(self)
+		threading.Thread.__init__(self)
 
-	def run(self):
+	def run(self, api_port, d_files):
+		self.global_endpoint = "http://localhost:%d" % api_port
+		
+		start_daemon(d_files)
 		logging.debug("GPIO THREAD STARTED...")
 
 		while True:
@@ -63,11 +79,10 @@ class GPIOThread(Thread):
 		logging.debug("terminating GPIO Thread...")
 
 	def parse_state(self):
-		logging.debug("parsing GPIO state...")
 		pass
 
 	def send(self, endpoint):
-		url = "http://localhost:%d/%s" % (self.conf['api_port'], endpoint)
+		url = "%s/%s" % (self.global_endpoint, endpoint)
 		
 		try:
 			r = requests.get(url)
@@ -96,11 +111,15 @@ class IRReceiverThread(ReceiverThread):
 		self.gpio = VCNL4010()
 		self.gpio.continuous_conversion_on()
 
+		logging.debug("IRReceiverThread online.")
+
 	def parse_state(self):
 		super(ReceiverThread, self).parse_state()
+
+		# TODO: needs debounce.
 		
-		logging.debug("proximity is %d" % self.gpio.read_proximity())
-		logging.debug("ambient light is %d" % self.gpio.read_ambient())
+		#logging.debug("proximity is %d" % self.gpio.read_proximity())
+		#logging.debug("ambient light is %d" % self.gpio.read_ambient())
 
 		# and decide whether to pickup or hang up based on this...
 		# might need to set values in config to declare threshold per sculpture
@@ -131,6 +150,8 @@ class ButtonThread(GPIOThread):
 		from interact.MomentarySwitch import MomentarySwitch
 
 		self.gpio = MomentarySwitch(pin, True, self.on_button_press)
+
+		logging.debug("ButtonThread online.")
 
 	def on_button_press(self, gpio, level, tick):
 		logging.debug("Simple button pressed! (level: %s, tick: %s)" % (str(level), str(tick)))
