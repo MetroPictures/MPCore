@@ -309,7 +309,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		start_daemon(self.conf['d_files']['api'])
 		server.start(self.conf['num_processes'])
 
-		logging.info("API serving...")
 		tornado.ioloop.IOLoop.instance().start()
 
 	def stop_api(self):

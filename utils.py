@@ -64,7 +64,7 @@ def start_daemon(d_files):
 	os.dup2(so.fileno(), sys.stdout.fileno())
 	os.dup2(se.fileno(), sys.stderr.fileno())
 
-	print ">>> PROCESS %s DAEMONIZED" % d_files['log']
+	print ">>> PROCESS DAEMONIZED"
 
 def stop_daemon(d_files):
 	pid = False
@@ -79,7 +79,7 @@ def stop_daemon(d_files):
 		print "NO PID AT %s" % d_files['pid']
 	
 	if pid:
-		print "STOPPING DAEMON %s on pid %d" % (d_files['log'], pid)
+		print "STOPPING DAEMON on pid %d" % pid
 	
 		try:
 			os.kill(pid, signal.SIGTERM)
