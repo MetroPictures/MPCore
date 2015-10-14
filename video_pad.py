@@ -184,7 +184,7 @@ class MPVideoPad(object):
 				info = {}
 				
 				if not unpause:
-					old_info = json.loads(self.db.get("video_%d" % video_mapping.index))
+					old_info = self.get_video_info(video_mapping.index)
 					position = 0 if 'position_at_last_pause' not in old_info.keys() else old_info['position_at_last_pause']
 					
 					info['last_pause_time'] = pause_time
