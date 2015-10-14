@@ -1,12 +1,11 @@
-import os, re, logging, tornado.web
+import os, re, json, logging, tornado.web
 from fabric.api import settings, local
 from fabric.context_managers import hide
 from subprocess import Popen, PIPE, STDOUT
-from multiprocessing import Process
-from copy import deepcopy
-from time import sleep
+from multiprocessing import Process, Queue
+from time import sleep, time
 
-from utils import start_daemon, stop_daemon
+from utils import start_daemon, stop_daemon, time_str_to_millis, millis_to_time_str
 from vars import BASE_DIR
 
 class MPVideoPad(object):
@@ -15,7 +14,7 @@ class MPVideoPad(object):
 		'exe' : "echo -n %s > %s"
 	}
 
-	class VideoMappingTemplate(object):
+	class VideoMappingTemplate():
 		def __init__(self, video, log_path, index=0):
 			self.src = video
 			self.index = index
@@ -24,10 +23,6 @@ class MPVideoPad(object):
 				'log' : log_path,
 				'pid' : os.path.join(BASE_DIR, ".monitor", "omxplayer_%d.pid.txt" % self.index)
 			}
-			self.duration = {}
-
-		def set_duration(self, duration):
-			self.duration = duration
 
 	def __init__(self):
 		logging.basicConfig(filename=self.conf['d_files']['vid']['log'])
@@ -60,29 +55,61 @@ class MPVideoPad(object):
 		
 		return None
 
-
 	def start_video_pad(self):
 		return True
 
 	def stop_video_pad(self):
 		with settings(hide('everything'), warn_only=True):
-			omx_instances = local("ps ax | grep -v grep | grep omxplayer", capture=True)
-			if omx_instances.succeeded:
-				for line in omx_instances.split('\n'):
-					try:
-						omx_pid = re.findall(r'(\d+)\s.*', line)[0]
-					except Exception as e:
-						continue
-
-					local("kill -9 %d" % int(omx_pid))
+			for omx_pid in self.get_omx_instances():
+				local("kill -9 %d" % omx_pid)
 
 			for video_mapping in self.video_mappings:
-				stop_daemon(video_mapping.d_files)
 				local("rm %s" % video_mapping.fifo)
 
 		return True
 
-	def play_video(self, video):
+	def get_omx_instances(self, video=None):
+		omx_pids = []
+		
+		with settings(hide('everything'), warn_only=True):
+			omx_instances = local("ps ax | grep -v grep | grep omxplayer", capture=True)
+			
+			if not omx_instances.succeeded:
+				return omx_pids
+
+			for line in omx_instances.split('\n'):
+				if video is not None and not re.match(video, line):
+					print "SKIPPING THIS BECAUSE IT DOES NOT CONCERN VIDEO %s" % line
+					continue
+				
+				try:
+					omx_pids.append(int(re.findall(r'(\d+)\s.*', line)[0]))
+				except Exception as e:
+					print "OOPS"
+					print e, type(e)
+					continue
+
+		return omx_pids
+
+	def stop_video(self, video=None, video_callback=None):
+		if video is None:
+			video_mapping = self.video_mappings[0]
+		else:
+			video_mapping = self.get_video_mapping_by_filename(video)
+			if video_mapping is None:
+				logging.err("NO VIDEEO %s TO STOP!" % video)
+				return False
+
+		with settings(warn_only=True):
+			for omx_pid in self.get_omx_instances(video=video):
+				local("kill -9 %s" % int(omx_pid))
+
+			local("rm %s" % video_mapping.fifo)
+
+		logging.debug("stopping video #%d (%s)" % (video_mapping.index, video_mapping.src))
+		return True
+
+	def play_video(self, video, with_extras=None, video_callback=None):
 		video_mapping = self.get_video_mapping_by_filename(video)
 
 		# make fifo
@@ -92,41 +119,66 @@ class MPVideoPad(object):
 
 			local("mkfifo %s" % video_mapping.fifo)
 
-		p = Process(target=self.setup_video, args=(video_mapping,))
+		p = Process(target=self.setup_video, args=(video_mapping, with_extras, video_callback))
 		p.start()
-
+		
 		# set playing
 		with settings(warn_only=True):
 			local(self.OMX_CMD['exe'] % ('p', video_mapping.fifo))
-			sleep(0.5)
+			start_time = time()
 			local(self.OMX_CMD['exe'] % ('p', video_mapping.fifo))
+
+		if video_callback is not None:
+			video_callback({'index' : video_mapping.index, 'info' : {'start_time' : start_time}})
 
 		return True
 
-	def setup_video(self, video_mapping):
+	def setup_video(self, video_mapping, with_extras=None, video_callback=None):
 		logging.debug("setting up video #%d (%s)" % (video_mapping.index, video_mapping.src))
 		
 		# load video into omxplayer on fifo. this will block.
 		start_daemon(video_mapping.d_files)
-		p = Popen(self.OMX_CMD['setup'] % (video_mapping.src, video_mapping.fifo), \
+		
+		setup_cmd = self.OMX_CMD['setup']
+
+		try:
+			defaults = json.loads(self.db.get("video_%d" % video_mapping.index))['defaults']
+			
+			if with_extras is not None:
+				with_extras.update(defaults)
+			else:
+				with_extras = defaults
+
+		except Exception as e:
+			pass
+		
+		if with_extras is not None:
+			setup_cmd = setup_cmd.replace("-I", "-I %s " % " ".join(\
+				["--%s %s" % (e, with_extras[e]) for e in with_extras.keys()]))
+
+		logging.debug("setup command: %s" % setup_cmd)
+
+		p = Popen(setup_cmd % (video_mapping.src, video_mapping.fifo), \
 			shell=True, stdout=PIPE, stderr=STDOUT)
 
 		while True:
 			duration_line = re.findall(r'Duration\:\s+(.*),.*', p.stdout.readline())
 			if len(duration_line) == 1:
 				duration_str = duration_line[0].split(",")[0]
-				d = duration_str.split(":")
-				
-				dh = (int(d[0]) * 60 * 60) * 1000
-				dm = (int(d[1]) * 60) * 1000
-				ds = (float(d[2])) * 1000
+				duration = {
+					'millis' : time_str_to_millis(duration_str),
+					'str' : duration_str
+				}
 
-				self.video_mappings[video_mapping.index].set_duration({
-					'str' : duration_str,
-					'millis' : dh + dm + ds
-				})
+				if video_callback is not None:
+					video_callback({'index' : video_mapping.index, \
+						'info' : {'duration' : duration}})
 
-	def pause_video(self, video=None):
+				break
+
+		stop_daemon(video_mapping.d_files)		
+	
+	def pause_video(self, video=None, unpause=False, video_callback=None):
 		if video is None:
 			video_mapping = self.video_mappings[0]
 		else:
@@ -138,14 +190,57 @@ class MPVideoPad(object):
 		logging.debug("play/pausing video #%d (%s)" % (video_mapping.index, video_mapping.src))
 
 		with settings(warn_only=True):
+			pause_time = time()
 			local(self.OMX_CMD['exe'] % ('p', video_mapping.fifo))
+
+			if video_callback is not None:
+				info = {}
+				
+				if not unpause:
+					old_info = json.loads(self.db.get("video_%d" % video_mapping.index))
+					position = 0 if 'position_at_last_pause' not in old_info.keys() else old_info['position_at_last_pause']
+					
+					info['last_pause_time'] = pause_time
+					info['position_at_last_pause'] = (position + abs(pause_time - old_info['start_time']))
+
+				else:
+					info['start_time'] = pause_time
+
+				video_callback({'index' : video_mapping.index, 'info' : info})
 
 		return True
 
-	def unpause_video(self, video=None):
+	def unpause_video(self, video=None, video_callback=None):
 		logging.debug("unpausing video")
 
-		return self.pause_video(video=video)
+		return self.pause_video(video=video, unpause=True, video_callback=video_callback)
+
+	def move_video(self, position, video=None, video_callback=None):
+		if video is None:
+			video_mapping = self.video_mappings[0]
+		else:
+			video_mapping = self.get_video_mapping_by_filename(video)
+			if video_mapping is None:
+				logging.err("NO VIDEEO %s TO MOVE!" % video)
+				return False
+
+		logging.debug("moving video #%d (%s)" % (video_mapping.index, video_mapping.src))
+
+		# pause
+		if not self.pause_video(video=video, video_callback=video_callback):
+			return False
+
+		# stop
+		if not self.stop_video(video=video, video_callback=video_callback):
+			return False
+
+		# setup with extras
+		extras = {
+			'pos' : millis_to_time_str(video_info['position_at_last_pause'] * 1000),
+			'win' : position
+		}
+
+		return self.play_video(video=video, with_extras=extras, video_callback=video_callback)
 
 	class VideoHandler(tornado.web.RequestHandler):
 		def get(self):
