@@ -222,7 +222,9 @@ class MPVideoPad(object):
 		if with_extras is None:
 			with_extras = {}
 
-		with_extras['win'] = placement
+		if placement is not None:
+			with_extras['win'] = placement
+		
 		try:
 			with_extras['pos'] = millis_to_time_str(self.get_video_info(video_mapping.index)['position_at_last_pause'] * 1000)
 		except Exception as e:
