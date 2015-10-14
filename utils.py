@@ -32,6 +32,20 @@ def str_to_bool(str):
 		
 	return False
 
+def time_str_to_millis(time_st):
+	d = time_st.split(":")
+			
+	dh = (int(d[0]) * 60 * 60) * 1000
+	dm = (int(d[1]) * 60) * 1000
+	ds = (float(d[2])) * 1000
+
+	return dh + dm + ds
+
+def millis_to_time_str(millis):
+	dm, ds = divmod(millis/1000, 60)
+	dh, dm = divmod(dm, 60)
+	return "%02d:%02d:%02f" % (dh, dm, ds)
+
 def start_daemon(d_files):	
 	try:
 		pid = os.fork()
