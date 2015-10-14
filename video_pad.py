@@ -1,4 +1,4 @@
-import os, re, json, logging, tornado.web
+import os, re, json, logging
 from fabric.api import settings, local
 from fabric.context_managers import hide
 from subprocess import Popen, PIPE, STDOUT
@@ -37,15 +37,6 @@ class MPVideoPad(object):
 			
 			break
 
-		# add video pad to routes
-		self.routes.extend([
-			(r'/video', self.VideoHandler),
-			(r'/video/js/(.*)', tornado.web.StaticFileHandler, \
-				{ 'path' : os.path.join(self.conf['media_dir'], "video", "js")}),
-			(r'/video/viz/(.*)', tornado.web.StaticFileHandler, \
-				{ 'path' : os.path.join(self.conf['media_dir'], "video", "viz")})
-		])
-
 	def get_video_mapping_by_filename(self, video):
 		try:
 			return [vm for vm in self.video_mappings if \
@@ -53,6 +44,14 @@ class MPVideoPad(object):
 		except Exception as e:
 			logging.error("No video found for %s" % video)
 		
+		return None
+
+	def get_video_info(self, index):
+		try:
+			return json.loads(self.db.get("video_%d" % index))
+		except Exception as e:
+			logging.error("NO INFO FOR VIDEO %d" % index)
+
 		return None
 
 	def start_video_pad(self):
@@ -140,18 +139,6 @@ class MPVideoPad(object):
 		start_daemon(video_mapping.d_files)
 		
 		setup_cmd = self.OMX_CMD['setup']
-
-		try:
-			defaults = json.loads(self.db.get("video_%d" % video_mapping.index))['defaults']
-			
-			if with_extras is not None:
-				with_extras.update(defaults)
-			else:
-				with_extras = defaults
-
-		except Exception as e:
-			pass
-		
 		if with_extras is not None:
 			setup_cmd = setup_cmd.replace("-I", "-I %s " % " ".join(\
 				["--%s %s" % (e, with_extras[e]) for e in with_extras.keys()]))
@@ -215,7 +202,7 @@ class MPVideoPad(object):
 
 		return self.pause_video(video=video, unpause=True, video_callback=video_callback)
 
-	def move_video(self, video, position, video_callback=None):
+	def move_video(self, video, placement, with_extras=None, video_callback=None):
 		video_mapping = self.get_video_mapping_by_filename(video)
 		if video_mapping is None:
 			logging.err("NO VIDEEO %s TO MOVE!" % video)
@@ -232,16 +219,20 @@ class MPVideoPad(object):
 			return False
 
 		# setup with extras
-		extras = {
-			'pos' : millis_to_time_str(video_info['position_at_last_pause'] * 1000),
-			'win' : position
-		}
+		if with_extras is None:
+			with_extras = {}
 
-		return self.play_video(video=video, with_extras=extras, video_callback=video_callback)
+		with_extras['win'] = placement
+		try:
+			with_extras['pos'] = millis_to_time_str(self.get_video_info(video_mapping.index)['position_at_last_pause'] * 1000)
+		except Exception as e:
+			print e, type(e)
 
-	class VideoHandler(tornado.web.RequestHandler):
-		def get(self):
-			self.render(os.path.join(self.application.conf['media_dir'], "video", "index.html"))
+		if self.play_video(video=video, with_extras=with_extras, video_callback=video_callback):
+			if video_callback is not None:
+				video_callback({'index' : video_mapping.index, 'current_placement' : placement})
+			
+			return True
 
-
+		return False
 
