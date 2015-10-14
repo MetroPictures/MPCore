@@ -215,14 +215,11 @@ class MPVideoPad(object):
 
 		return self.pause_video(video=video, unpause=True, video_callback=video_callback)
 
-	def move_video(self, position, video=None, video_callback=None):
-		if video is None:
-			video_mapping = self.video_mappings[0]
-		else:
-			video_mapping = self.get_video_mapping_by_filename(video)
-			if video_mapping is None:
-				logging.err("NO VIDEEO %s TO MOVE!" % video)
-				return False
+	def move_video(self, video, position, video_callback=None):
+		video_mapping = self.get_video_mapping_by_filename(video)
+		if video_mapping is None:
+			logging.err("NO VIDEEO %s TO MOVE!" % video)
+			return False
 
 		logging.debug("moving video #%d (%s)" % (video_mapping.index, video_mapping.src))
 
