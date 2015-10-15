@@ -19,10 +19,15 @@ Using NOOBS v 1.4.1 works best.  1.4.2 uses Jessie, which is not the best distro
 
 ##	3. Networking
 
-Modify `/etc/networking/interfaces` to do the following:
+Modify `/etc/networking/interfaces` to do give your RPi a Static IP address, like so:
 
-1.	Give your RPi a Static IP address 
-1.	Set DNS nameservers
+```
+address 192.168.0.100
+gateway 192.168.0.1
+network 192.168.0.0
+broadcast 192.168.0.255
+netmask 255.255.255.0
+```
 
 At this point, reboot to gain access to the pi via ssh if you'd like.
 
