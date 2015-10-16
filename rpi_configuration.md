@@ -25,7 +25,7 @@ Modify `/etc/networking/interfaces` to do give your RPi a Static IP address, lik
 address 192.168.0.100
 gateway 192.168.0.1
 network 192.168.0.0
-broadcast 192.168.0.255
+broadcast 192.168.0.254
 netmask 255.255.255.0
 ```
 
@@ -66,18 +66,6 @@ At this point, reboot to gain access to the pi via ssh if you'd like.
 ##	7. Soundcards
 
 1.	Set your USB soundcard as the default.  Edit `/etc/modprob.d/alsa-base.conf` and set the directive `options snd-usb-audio index=-2` to `options snd-usb-audio index=0`.
-1.	Modify your `~/.asoundrc` file to explicitly set card 0 as default.
-	```
-	pcm.!default {
-		type hw
-		card 0
-	}
-
-	ctl.!default {
-		type hw
-		card 0
-	}
-	```
 
 ##	8. Finally, reboot
 
