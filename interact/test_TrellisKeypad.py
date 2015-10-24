@@ -1,5 +1,5 @@
 from time import sleep
-from TrellisKeypad import TrellisKeypad
+from TrellisKeypad import Adafruit_Trellis, Adafruit_TrellisSet
 
 NUMTRELLIS = 1
 numKeys = NUMTRELLIS * 16
@@ -11,8 +11,8 @@ LATCHING = 1
 
 MODE = LATCHING
 
-matrix = TrellisKeypad()
-trellis = TrellisKeypad.Adafruit_TrellisSet(matrix)
+matrix = Adafruit_Trellis()
+trellis = Adafruit_TrellisSet(matrix)
 
 trellis.begin((0x70, I2C_BUS))
 
