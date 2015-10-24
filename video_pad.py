@@ -202,6 +202,16 @@ class MPVideoPad(object):
 
 		return self.pause_video(video=video, unpause=True, video_callback=video_callback)
 
+	def mute_video(self, video=None, unmute=False, video_callback=None):
+		logging.deubg("muting video")
+
+		return False
+
+	def unmute_video(self, video=None, video_callback=None):
+		logging.debug("unmuting video")
+
+		return self.mute_video(video=video, unmute=True, video_callback=video_callback)
+
 	def move_video(self, video, placement, with_extras=None, video_callback=None):
 		video_mapping = self.get_video_mapping_by_filename(video)
 		if video_mapping is None:
