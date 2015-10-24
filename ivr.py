@@ -4,7 +4,7 @@ from fabric.api import settings, local
 
 from audio_pad import MPAudioPad
 from utils import start_daemon, stop_daemon
-from vars import PROD_MODE, DEFAULT_RELEASE_KEY, GATHER_MODE, RESPOND_MODE, BASE_DIR
+from vars import PROD_MODE, DEFAULT_RELEASE_KEY, GATHER_MODE, RESPOND_MODE, BASE_DIR, DEFAULT_GATHER_EXPIRY
 
 class MPIVR(MPAudioPad):
 	"""The mock IVR client.
