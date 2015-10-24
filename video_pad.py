@@ -205,6 +205,10 @@ class MPVideoPad(object):
 	def mute_video(self, video=None, unmute=False, video_callback=None):
 		logging.deubg("muting video")
 
+		# pause video
+		# set audio level
+		# unpause video
+
 		return False
 
 	def unmute_video(self, video=None, video_callback=None):
