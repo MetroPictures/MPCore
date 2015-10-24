@@ -160,6 +160,27 @@ class ButtonThread(GPIOThread):
 		self.gpio.pig.stop()
 		super(ButtonThread, self).terminate()
 
+class TrellisKeypadThread(GPIOThread):
+	def __init__(self):
+		GPIOThread.__init__(self)
+		from interact.TrellisKeypad import TrellisKeypad
+
+		matrix = TrellisKeypad()
+		self.gpio = TrellisKeypad.Adafruit_TrellisSet(matrix)
+		self.pad_mapping = {
+			0:0, 1:1, 2:2, 4:3, \
+			5:4, 6:5, 8:6, 9:7, \
+			10:8, 12:9, 13:10, 14:11
+		}
+
+	def parse_state(self):
+		super(TrellisKeypadThread, self).parse_state()
+
+	def on_key_press(self, key):
+		super(TrellisKeypadThread, self).send("mapping/%d" % self.pad_mapping[key])
+
+	def terminate(self):
+		super(TrellisKeypadThread, self).terminate()
 
 class MatrixKeypadThread(GPIOThread):
 	def __init__(self, columm_pins, row_pins):
