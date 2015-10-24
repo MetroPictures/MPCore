@@ -55,7 +55,7 @@ class MPGPIO():
 		return str_to_bool(self.db.get('GPIO_STATUS'))
 
 	def __on_gpio_status_changed(self, status, mocked_gpio=False):
-		logging.info("GPIO STATUS: %s (mocked: %s)" % (status, mocked_gpio)
+		logging.info("GPIO STATUS: %s (mocked: %s)" % (status, mocked_gpio))
 		self.db.set('GPIO_STATUS', True)
 
 		return True
