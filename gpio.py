@@ -163,10 +163,10 @@ class ButtonThread(GPIOThread):
 class TrellisKeypadThread(GPIOThread):
 	def __init__(self):
 		GPIOThread.__init__(self)
-		from interact.TrellisKeypad import TrellisKeypad
+		from interact.TrellisKeypad import Adafruit_Trellis, Adafruit_TrellisSet
 
-		matrix = TrellisKeypad()
-		self.gpio = TrellisKeypad.Adafruit_TrellisSet(matrix)
+		matrix = Adafruit_Trellis()
+		self.gpio = Adafruit_TrellisSet(matrix)
 		self.pad_mapping = {
 			0:0, 1:1, 2:2, 4:3, \
 			5:4, 6:5, 8:6, 9:7, \
