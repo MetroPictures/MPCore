@@ -202,39 +202,3 @@ class MPVideoPad(object):
 
 		return self.pause_video(video=video, unpause=True, video_callback=video_callback)
 
-	def move_video(self, video, placement, with_extras=None, video_callback=None):
-		video_mapping = self.get_video_mapping_by_filename(video)
-		if video_mapping is None:
-			logging.err("NO VIDEEO %s TO MOVE!" % video)
-			return False
-
-		logging.debug("moving video #%d (%s)" % (video_mapping.index, video_mapping.src))
-
-		# pause
-		if not self.pause_video(video=video, video_callback=video_callback):
-			return False
-
-		# stop
-		if not self.stop_video(video=video, video_callback=video_callback):
-			return False
-
-		# setup with extras
-		if with_extras is None:
-			with_extras = {}
-
-		if placement is not None:
-			with_extras['win'] = placement
-		
-		try:
-			with_extras['pos'] = millis_to_time_str(self.get_video_info(video_mapping.index)['position_at_last_pause'] * 1000)
-		except Exception as e:
-			print e, type(e)
-
-		if self.play_video(video=video, with_extras=with_extras, video_callback=video_callback):
-			if video_callback is not None:
-				video_callback({'index' : video_mapping.index, 'current_placement' : placement})
-			
-			return True
-
-		return False
-

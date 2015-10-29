@@ -2,7 +2,7 @@ import pigpio
 from time import time
 
 class MomentarySwitch():
-	def __init__(self, pin, trigger_low, callback=None, release_callback=None, boucetime=0.3):
+	def __init__(self, pin, trigger_low, boucetime=0.3, callback=None, release_callback=None):
 		self.pig = pigpio.pi()
 		self.time_stamp = time()
 
@@ -18,24 +18,34 @@ class MomentarySwitch():
 			self.pressed = pigpio.FALLING_EDGE
 			self.released = pigpio.RISING_EDGE
 
-		self.callback = self.debounce(boucetime, callback)
-		self.release_callback = self.debounce(boucetime, release_callback)
+		self.callback = self.debounce(boucetime, callback) if callback is not None else None
+		self.release_callback = self.debounce(boucetime, release_callback) if release_callback is not None else None
 
 		self.pig.set_mode(self.pin, pigpio.INPUT)
 		self.pig.set_pull_up_down(self.pin, self.pud)
 
 	def listen(self):
-		self.listen_for_press = self.pig.callback(self.pin, self.pressed, self.callback)
-		self.listen_for_release = self.pig.callback(self.pin, self.released, self.release_callback)
+		if self.callback is not None:
+			self.listen_for_press = self.pig.callback(self.pin, self.pressed, self.callback)
+
+		if self.release_callback is not None:
+			self.listen_for_release = self.pig.callback(self.pin, self.released, self.release_callback)
 
 	def unlisten(self):
-		self.listen_for_press.cancel()
-		self.listen_for_release.cancel()
+		if self.listen_for_press:
+			self.listen_for_press.cancel()
+
+		if self.listen_for_release:
+			self.listen_for_release.cancel()
 
 	def debounce(self, bouncetime, func, *args, **kwargs):
-		time_now = time()
+		def debounced(*args, **kwargs):
+			time_now = time()
+			
+			if (time_now - self.time_stamp) >= bouncetime:
+				func(*args, **kwargs)
+				self.time_stamp = time_now
+			
+			return debounced
 
-		if(time_now - self.time_stamp) >= bouncetime:
-			func(*args, **kwargs)
 
-		self.time_stamp = time_now
