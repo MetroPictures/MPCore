@@ -138,7 +138,9 @@ class HallEffectReceiverThread(ReceiverThread):
 		super(ReceiverThread, self).on_hang_up()
 
 	def terminate(self):
+		self.gpio.unlisten()
 		self.gpio.pig.stop()
+		
 		super(HallEffectReceiverThread, self).terminate()
 
 class ButtonThread(GPIOThread):
@@ -155,7 +157,9 @@ class ButtonThread(GPIOThread):
 		super(ButtonThread, self).send("mapping/%d" % self.gpio.pin)
 
 	def terminate(self):
+		self.gpio.unlisten()
 		self.gpio.pig.stop()
+		
 		super(ButtonThread, self).terminate()
 
 class TrellisKeypadThread(GPIOThread):
