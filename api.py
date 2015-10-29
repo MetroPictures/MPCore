@@ -187,9 +187,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 				print gathered_keys
 			except Exception as e:
 				logging.warning("could not get gathered_keys: ")
-				
-				if PROD_MODE == "debug":
-					print e, type(e)
+				print e, type(e)
 
 				gathered_keys = []
 

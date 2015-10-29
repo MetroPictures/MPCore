@@ -15,13 +15,7 @@
 #
 #   Python port created by Tony DiCola (tony@tonydicola.com
 
-try:
-	import Adafruit_I2C
-except ImportError:
-	raise ImportError('Could not find Adafruit_I2C library.  If running on the Beaglebone make sure the' \
-		' Adafruit_BBIO library is installed.  If running on the Raspberry Pi make sure the Adafruit_I2C.py' \
-		' file is in the same directory as your script.')
-
+import Adafruit_I2C
 
 LED_ON = 1
 LED_OFF = 0

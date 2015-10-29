@@ -3,7 +3,7 @@ from multiprocessing import Process
 from time import sleep
 
 from utils import start_daemon, stop_daemon, get_config, str_to_bool
-from vars import PROD_MODE, BASE_DIR
+from vars import BASE_DIR
 
 mock_gpio = False
 
@@ -21,9 +21,7 @@ class MPGPIO():
 
 	def start_gpio(self):
 		if mock_gpio:
-			logging.info("starting mocked gpio.")
-			self.db.set('GPIO_STATUS', True)
-			return
+			return self.__on_gpio_status_changed(True, mocked_gpio=True)
 
 		gpio_mappings = get_config('gpio_mappings')
 		receiver = globals()[gpio_mappings['receiver']['type']]()
@@ -37,14 +35,11 @@ class MPGPIO():
 			p = Process(target=mapping.run, args=(self.conf['api_port'], d_files,))
 			p.start()
 
-		logging.info("GPIO listening...")
-		self.db.set('GPIO_STATUS', True)
+		return self.__on_gpio_status_changed(True)
 
 	def stop_gpio(self):
 		if mock_gpio:
-			logging.info("stopping mocked gpio.")
-			self.db.set('GPIO_STATUS', False)
-			return
+			return self.__on_gpio_status_changed(False, mocked_gpio=True)
 
 		gpio_mappings = get_config('gpio_mappings')
 		for m in xrange(1 + len(gpio_mappings['buttons']['pins'])):
@@ -53,12 +48,17 @@ class MPGPIO():
 
 			stop_daemon(d_files)
 
-		self.db.set('GPIO_STATUS', False)
-		logging.info("GPIO Stopped")
+		return self.__on_gpio_status_changed(False)
 
 	def get_gpio_status(self):
 		# maybe this will be something more substantial...
 		return str_to_bool(self.db.get('GPIO_STATUS'))
+
+	def __on_gpio_status_changed(self, status, mocked_gpio=False):
+		logging.info("GPIO STATUS: %s (mocked: %s)" % (status, mocked_gpio))
+		self.db.set('GPIO_STATUS', True)
+
+		return True
 
 class GPIOThread(threading.Thread):
 	def __init__(self):
@@ -88,9 +88,7 @@ class GPIOThread(threading.Thread):
 			logging.info(r.content)
 		except Exception as e:
 			logging.warning("Could not perform request to %s: " % url)
-			
-			if PROD_MODE == "debug":
-				print e, type(e)
+			print e, type(e)
 
 class ReceiverThread(GPIOThread):
 	def __init__(self):
@@ -160,6 +158,33 @@ class ButtonThread(GPIOThread):
 		self.gpio.pig.stop()
 		super(ButtonThread, self).terminate()
 
+class TrellisKeypadThread(GPIOThread):
+	def __init__(self):
+		GPIOThread.__init__(self)
+		from interact.TrellisKeypad import Adafruit_Trellis, Adafruit_TrellisSet
+
+		ADDR = 0x70
+		I2C_BUS = 1
+
+		matrix = Adafruit_Trellis()
+		self.gpio = Adafruit_TrellisSet(matrix)
+		
+		self.pad_mapping = {
+			0:0, 1:1, 2:2, 4:3, \
+			5:4, 6:5, 8:6, 9:7, \
+			10:8, 12:9, 13:10, 14:11
+		}
+
+		self.gpio.begin((ADDR, I2C_BUS))
+
+	def parse_state(self):
+		super(TrellisKeypadThread, self).parse_state()
+
+	def on_key_press(self, key):
+		super(TrellisKeypadThread, self).send("mapping/%d" % self.pad_mapping[key])
+
+	def terminate(self):
+		super(TrellisKeypadThread, self).terminate()
 
 class MatrixKeypadThread(GPIOThread):
 	def __init__(self, columm_pins, row_pins):

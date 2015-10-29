@@ -60,14 +60,15 @@ def update_cdn():
 
 	ftp.quit()
 
-def install():
+def install(with_cdn=True):
 	# run setup scripts
 	redis_port, api_port, mock_gpio = get_config(['redis_port', 'api_port', 'mock_gpio'])
 	if 8888 in [redis_port, api_port]:
 		print "HEY, WAIT!  Port 8888 is reserved for another purpose (the GPIO).\nEdit your config and run setup.py again."
 		return
 
-	update_cdn()
+	if with_cdn:
+		update_cdn()
 
 	# make .monitor dir
 	try:
@@ -111,3 +112,6 @@ if __name__ == "__main__":
 	elif len(argv) == 2:
 		if argv[1] == "update":
 			update_cdn()
+
+		if argv[1] == "no-update":
+			install(with_cdn=False)
