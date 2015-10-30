@@ -48,7 +48,7 @@ class MPAudioPad():
 					res['ok'] = self.press(command['press'])
 				
 				elif "play" in command.keys():
-					res['ok'] = self.play(command['play'])
+					res['ok'] = self.play(command['play'], interruptable=command['interruptable'])
 				
 				elif "start_recording" in command.keys():
 					res['ok'] = self.start_recording(command['start_recording'])
@@ -79,7 +79,7 @@ class MPAudioPad():
 		channel.unpause()
 		return True
 
-	def play(self, src):
+	def play(self, src, interruptable=True):
 		src = os.path.join(self.conf['media_dir'], src)
 
 		try:
@@ -91,6 +91,9 @@ class MPAudioPad():
 
 			channel.play(audio)
 			logging.debug("streaming sound file %s" % src)
+
+			if not interruptable:
+				sleep(audio.get_length())
 
 			return True
 
@@ -114,11 +117,10 @@ class MPAudioPad():
 				channel.set_volume(0, 1)
 			
 			channel.play(audio)
+			logging.debug("playing clip %s (length %d)" % (src, audio.get_length()))
 
 			if not interruptable:
 				sleep(audio.get_length())
-			
-			logging.debug("playing clip %s (length %d)" % (src, audio.get_length()))
 			
 			return True
 		except Exception as e:

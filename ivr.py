@@ -17,7 +17,7 @@ class MPIVR(MPAudioPad):
 		logging.basicConfig(filename=self.conf['d_files']['ivr']['log'], level=logging.DEBUG)
 		MPAudioPad.__init__(self)
 
-	def say(self, message, interruptable=False):
+	def say(self, message, interruptable=True):
 		logging.debug("saying %s" % message)
 
 		return self.send_command({ 'play' : message, 'interruptable' : interruptable })
