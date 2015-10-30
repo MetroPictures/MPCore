@@ -1,8 +1,7 @@
-import os, requests, logging, threading
-from multiprocessing import Process
+import os, requests, logging
 from time import sleep
 
-from utils import start_daemon, stop_daemon, get_config, str_to_bool
+from utils import get_config, str_to_bool
 from vars import BASE_DIR
 
 mock_gpio = False
@@ -10,7 +9,14 @@ mock_gpio = False
 try:
 	mock_gpio = get_config('mock_gpio')
 except KeyError as e:
-	pass	
+	pass
+
+if not mock_gpio:
+	import pigpio, threading
+	from multiprocessing import Process
+	from utils import start_daemon, stop_daemon
+
+	pig = pigpio.pi()
 
 class MPGPIO():
 	"""GPIO utilities for our RPi.
@@ -24,7 +30,9 @@ class MPGPIO():
 			return self.__on_gpio_status_changed(True, mocked_gpio=True)
 
 		gpio_mappings = get_config('gpio_mappings')
-		receiver = globals()[gpio_mappings['receiver']['type']]()
+
+		receiver = globals()[gpio_mappings['receiver']['type']](pin=None if 'pin' not in gpio_mappings['receiver'].keys() else \
+			gpio_mappings['receiver']['pin'])
 		buttons = [globals()[gpio_mappings['buttons']['type']](pin) \
 			for pin in gpio_mappings['buttons']['pins']]
 
@@ -63,7 +71,7 @@ class MPGPIO():
 class GPIOThread(threading.Thread):
 	def __init__(self):
 		threading.Thread.__init__(self)
-
+		
 	def run(self, api_port, d_files):
 		self.global_endpoint = "http://localhost:%d" % api_port
 		
@@ -73,9 +81,6 @@ class GPIOThread(threading.Thread):
 		while True:
 			self.parse_state()
 			sleep(0.005)
-
-	def terminate(self):
-		logging.debug("terminating GPIO Thread...")
 
 	def parse_state(self):
 		pass
@@ -91,7 +96,7 @@ class GPIOThread(threading.Thread):
 			print e, type(e)
 
 class ReceiverThread(GPIOThread):
-	def __init__(self):
+	def __init__(self, pin=None):
 		GPIOThread.__init__(self)
 
 	def on_hang_up(self):
@@ -101,7 +106,7 @@ class ReceiverThread(GPIOThread):
 		super(ReceiverThread, self).send("pick_up")
 
 class IRReceiverThread(ReceiverThread):
-	def __init__(self):
+	def __init__(self, pin=None):
 		ReceiverThread.__init__(self)
 		from interact.VCNL4010 import VCNL4010
 
@@ -123,11 +128,12 @@ class IRReceiverThread(ReceiverThread):
 
 class HallEffectReceiverThread(ReceiverThread):
 	def __init__(self, pin):
-		ReceiverThread.__init__(self)
-		from interact.MomentarySwitch import MomentarySwitch
+		global pig
+		from interact.HallEffect import HallEffect
 
-		self.gpio = MomentarySwitch(pin, False, \
-			callback=self.on_pick_up, release_callback=self.on_hang_up, bouncetime=0)
+		ReceiverThread.__init__(self)
+		self.gpio = HallEffect(self.pig, pin, callback=self.on_pick_up, release_callback=self.on_hang_up)
+		logging.debug("HallEffectReceiverThread online.")
 
 	def on_pick_up(self, gpio, level, tick):
 		logging.debug("Hall Effect Pickup: (level: %s, tick: %s)" % (str(level), str(tick)))
@@ -137,33 +143,21 @@ class HallEffectReceiverThread(ReceiverThread):
 		logging.debug("Hall Effect Hangup: (level: %s, tick: %s)" % (str(level), str(tick)))
 		super(ReceiverThread, self).on_hang_up()
 
-	def terminate(self):
-		self.gpio.unlisten()
-		self.gpio.pig.stop()
-		
-		super(HallEffectReceiverThread, self).terminate()
-
 class ButtonThread(GPIOThread):
 	def __init__(self, pin):
+		global pig
+		from interact.Button import Button
+
 		GPIOThread.__init__(self)
-		from interact.MomentarySwitch import MomentarySwitch
-
-		self.gpio = MomentarySwitch(pin, True, self.on_button_press)
-
-		logging.debug("ButtonThread online.")
+		self.gpio = Button(pig, pin, callback=self.on_button_press)
+		logging.debug("ButtonThread %d online." % pin)
 
 	def on_button_press(self, gpio, level, tick):
 		logging.debug("Simple button pressed! (level: %s, tick: %s)" % (str(level), str(tick)))
 		super(ButtonThread, self).send("mapping/%d" % self.gpio.pin)
 
-	def terminate(self):
-		self.gpio.unlisten()
-		self.gpio.pig.stop()
-		
-		super(ButtonThread, self).terminate()
-
 class TrellisKeypadThread(GPIOThread):
-	def __init__(self):
+	def __init__(self, pin):
 		GPIOThread.__init__(self)
 		from interact.TrellisKeypad import Adafruit_Trellis, Adafruit_TrellisSet
 
@@ -187,15 +181,13 @@ class TrellisKeypadThread(GPIOThread):
 	def on_key_press(self, key):
 		super(TrellisKeypadThread, self).send("mapping/%d" % self.pad_mapping[key])
 
-	def terminate(self):
-		super(TrellisKeypadThread, self).terminate()
-
 class MatrixKeypadThread(GPIOThread):
-	def __init__(self, columm_pins, row_pins):
-		GPIOThread.__init__(self)
+	def __init__(self, pins):
+		global pig
 		from interact.MatrixKeypad import MatrixKeypad
 
-		self.gpio = MatrixKeypad(columm_pins, row_pins)
+		GPIOThread.__init__(self)
+		self.gpio = MatrixKeypad(pins[0], pins[1])
 		
 	def parse_state(self):
 		super(MatrixKeypadThread, self).parse_state()
@@ -209,9 +201,5 @@ class MatrixKeypadThread(GPIOThread):
 
 	def on_key_press(self, key):
 		super(MatrixKeypadThread, self).send("mapping/%d" % key)
-
-	def terminate(self):
-		self.gpio.pig.stop()
-		super(MatrixKeypadThread, self).terminate()
 
 

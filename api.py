@@ -76,7 +76,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		]
 
 		self.db = redis.StrictRedis(host='localhost', port=self.conf['redis_port'], db=0)
-		self.gpio = None
 		
 		logging.basicConfig(filename=self.conf['d_files']['api']['log'], level=logging.DEBUG)
 

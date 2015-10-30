@@ -1,9 +1,12 @@
 import pigpio
 from time import time
 
-class MomentarySwitch():
-	def __init__(self, pin, trigger_low, boucetime=0.3, callback=None, release_callback=None):
-		self.pig = pigpio.pi()
+class MomentarySwitch(object):
+	listen_for_press = None
+	listen_for_release = None
+
+	def __init__(self, pig, pin, trigger_low, bouncetime=0.3, callback=None, release_callback=None):
+		self.pig = pig
 		self.time_stamp = time()
 
 		self.pin = pin
@@ -18,8 +21,8 @@ class MomentarySwitch():
 			self.pressed = pigpio.FALLING_EDGE
 			self.released = pigpio.RISING_EDGE
 
-		self.callback = self.debounce(boucetime, callback) if callback is not None else None
-		self.release_callback = self.debounce(boucetime, release_callback) if release_callback is not None else None
+		self.callback = self.debounce(bouncetime, callback) if callback is not None else None
+		self.release_callback = self.debounce(bouncetime, release_callback) if release_callback is not None else None
 
 		self.pig.set_mode(self.pin, pigpio.INPUT)
 		self.pig.set_pull_up_down(self.pin, self.pud)
@@ -32,10 +35,10 @@ class MomentarySwitch():
 			self.listen_for_release = self.pig.callback(self.pin, self.released, self.release_callback)
 
 	def unlisten(self):
-		if self.listen_for_press:
+		if self.listen_for_press is not None:
 			self.listen_for_press.cancel()
 
-		if self.listen_for_release:
+		if self.listen_for_release is not None:
 			self.listen_for_release.cancel()
 
 	def debounce(self, bouncetime, func, *args, **kwargs):
@@ -46,6 +49,6 @@ class MomentarySwitch():
 				func(*args, **kwargs)
 				self.time_stamp = time_now
 			
-			return debounced
+		return debounced
 
 
