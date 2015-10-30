@@ -212,7 +212,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	def on_hang_up(self):
 		logging.info("hanging up")
-		
 		self.send_command({ 'stop_audio' : True })
 		stop_daemon(self.conf['d_files']['module'])
 		self.db.set('IS_HUNG_UP', True)
@@ -238,9 +237,11 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	def run_script(self):
 		start_daemon(self.conf['d_files']['module'])
 
+	# necessary?
 	def build_key_map(self, route):
 		return [c[0] for c in self.key_mappings[route]]
 
+	# necessary?
 	def find_next_route(self, route, choice):
 		try:
 			return [c[1] for c in self.key_mappings[route] if c[0] == choice][0]
@@ -249,6 +250,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 		return None
 
+	# necessary?
 	def route_loop(self, route):
 		logging.info(route)
 

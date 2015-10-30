@@ -1,4 +1,4 @@
-import os, signal, logging, json
+import os, signal, logging, json, threading
 from subprocess import Popen, PIPE
 from time import time, sleep
 from fabric.api import settings, local
@@ -57,16 +57,25 @@ class MPAudioPad():
 					res['ok'] = self.stop_recording()
 				
 				elif "stop_audio" in command.keys():
-					res['ok'] = self.stop_audio(channel=0) and self.stop_audio(channel=1)
+					print "HEY!"
+					res['ok'] = self.stop_audio()
 
 				self.db.publish('audio_responder', json.dumps(res))
 
 	def stop_audio_pad(self):
 		stop_daemon(self.conf['d_files']['audio'])
 
-	def stop_audio(self, channel=0):
-		channel = pygame.mixer.Channel(channel)
-		channel.stop()
+	def stop_audio(self, channel=None):
+		if channel is None:
+			channel = [0,1]
+
+		if type(channel) is not list:
+			channel = [channel]
+
+		for c in channel:
+			channel_ = pygame.mixer.Channel(c)
+			channel_.stop()
+		
 		return True
 
 	def pause(self, channel=0):
@@ -79,6 +88,29 @@ class MPAudioPad():
 		channel.unpause()
 		return True
 
+	class PlayThread(threading.Thread):
+		def __init__(self, db, channel, target, callback):
+			threading.Thread.__init__(self)
+			self.db = db
+			self.handler = self.db.pubsub()
+			self.handler.subscribe([channel])
+			self.target = target
+			self.callback = callback
+
+		def run(self):
+			for command in self.handler.listen():
+				if not command['data']:
+					continue
+
+				try:
+					command = json.loads(command['data'])
+				except Exception as e:
+					continue
+
+				if self.target in command.keys():
+					self.handler.unsubscribe()
+					self.callback()
+
 	def play(self, src, interruptable=True):
 		src = os.path.join(self.conf['media_dir'], src)
 
@@ -89,11 +121,31 @@ class MPAudioPad():
 			if self.split_chan:
 				channel.set_volume(1, 0)
 
+			duration = audio.get_length()
+			time_started = time()
+			time_finished = duration + time_started
 			channel.play(audio)
+
 			logging.debug("streaming sound file %s" % src)
 
 			if not interruptable:
-				sleep(audio.get_length())
+				self.interrupted = False
+
+				def on_interrupted():
+					self.interrupted = True
+					self.stop_audio()
+
+				play_thread = self.PlayThread(self.db, 'audio_receiver', 'stop_audio', on_interrupted)
+				play_thread.start()
+				
+				while not self.interrupted:
+					if time() > time_finished:
+						self.interrupted = True
+						break
+
+					sleep(1)
+
+				del self.interrupted
 
 			return True
 
