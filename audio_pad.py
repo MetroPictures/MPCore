@@ -57,7 +57,6 @@ class MPAudioPad():
 					res['ok'] = self.stop_recording()
 				
 				elif "stop_audio" in command.keys():
-					print "HEY!"
 					res['ok'] = self.stop_audio()
 
 				self.db.publish('audio_responder', json.dumps(res))

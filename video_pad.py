@@ -77,8 +77,8 @@ class MPVideoPad(object):
 				return omx_pids
 
 			for line in omx_instances.split('\n'):
-				if video is not None and not re.match(video, line):
-					print "SKIPPING THIS BECAUSE IT DOES NOT CONCERN VIDEO %s" % line
+				if video is not None and not re.match(video, line.strip()):
+					print "SKIPPING THIS BECAUSE IT DOES NOT CONCERN VIDEO"
 					continue
 				
 				try:
@@ -91,21 +91,19 @@ class MPVideoPad(object):
 		return omx_pids
 
 	def stop_video(self, video=None, video_callback=None):
-		if video is None:
-			video_mapping = self.video_mappings[0]
-		else:
-			video_mapping = self.get_video_mapping_by_filename(video)
-			if video_mapping is None:
-				logging.err("NO VIDEEO %s TO STOP!" % video)
-				return False
-
 		with settings(warn_only=True):
-			for omx_pid in self.get_omx_instances(video=video):
-				local("kill -9 %s" % int(omx_pid))
+			for omx_pid in self.get_omx_instances():
+				local("kill -9 %d" % omx_pid)
 
-			local("rm %s" % video_mapping.fifo)
+			for video_mapping in self.video_mappings:
+				local("rm %s" % video_mapping.fifo)
+
 
 		logging.debug("stopping video #%d (%s)" % (video_mapping.index, video_mapping.src))
+
+		if video_callback is not None:
+			video_callback({'index' : video_mapping.index, 'info' : {'stopped' : True}})
+
 		return True
 
 	def play_video(self, video, with_extras=None, video_callback=None):
@@ -122,13 +120,18 @@ class MPVideoPad(object):
 		p.start()
 		
 		# set playing
-		with settings(warn_only=True):
+		with settings(hide('everything'), warn_only=True):
+			local(self.OMX_CMD['exe'] % ('p', video_mapping.fifo))
 			local(self.OMX_CMD['exe'] % ('p', video_mapping.fifo))
 			start_time = time()
-			local(self.OMX_CMD['exe'] % ('p', video_mapping.fifo))
 
 		if video_callback is not None:
-			video_callback({'index' : video_mapping.index, 'info' : {'start_time' : start_time}})
+			info = {'start_time' : start_time}
+			
+			if with_extras is not None:
+				info['with_extras'] = with_extras
+
+			video_callback({'index' : video_mapping.index, 'info' : info})
 
 		return True
 
@@ -176,7 +179,7 @@ class MPVideoPad(object):
 
 		logging.debug("play/pausing video #%d (%s)" % (video_mapping.index, video_mapping.src))
 
-		with settings(warn_only=True):
+		with settings(hide('everything'), warn_only=True):
 			pause_time = time()
 			local(self.OMX_CMD['exe'] % ('p', video_mapping.fifo))
 
