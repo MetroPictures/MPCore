@@ -46,6 +46,9 @@ def millis_to_time_str(millis):
 	dh, dm = divmod(dm, 60)
 	return "%02d:%02d:%02f" % (dh, dm, ds)
 
+def micros_to_time_str(micros):
+	return millis_to_time_str(micros * 1000)
+
 def start_daemon(d_files):	
 	try:
 		pid = os.fork()

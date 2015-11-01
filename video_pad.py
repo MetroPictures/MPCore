@@ -6,7 +6,7 @@ from multiprocessing import Process, Queue
 from time import sleep, time
 
 from utils import start_daemon, stop_daemon, time_str_to_millis, millis_to_time_str
-from vars import BASE_DIR
+from vars import BASE_DIR, MAX_VIDEO_VOLUME, MIN_VIDEO_VOLUME
 
 MUTE_THRESHOLD = 10
 
@@ -14,6 +14,10 @@ class MPVideoPad(object):
 	OMX_CMD = {
 		'setup' : "omxplayer -I --no-osd -o local %s < %s",
 		'exe' : "echo -n %s > %s"
+	}
+
+	DBUS_CMD = {
+		'exe' : os.path.join(BASE_DIR, "core", "lib", "dbuscontrol.sh")
 	}
 
 	class VideoMappingTemplate():
@@ -189,11 +193,16 @@ class MPVideoPad(object):
 				info = {}
 				
 				if not unpause:
-					old_info = self.get_video_info(video_mapping.index)
-					position = 0 if 'position_at_last_pause' not in old_info.keys() else old_info['position_at_last_pause']
-					
+					old_info = self.get_video_info(video_mapping.index)					
 					info['last_pause_time'] = pause_time
-					info['position_at_last_pause'] = (position + abs(pause_time - old_info['start_time']))
+					
+					status = local("%s status" % self.DBUS_CMD['exe'], capture=True)
+					
+					if not status.succeeded:
+						logging.error("COULD NOT GET DBUS STATUS")
+						return False
+
+					info['position_at_last_pause'] = int(status.splitlines()[1].split(":")[1].strip())
 
 				else:
 					info['start_time'] = pause_time
@@ -218,13 +227,35 @@ class MPVideoPad(object):
 
 		logging.debug("muting video")
 		
-		'''
+		
 		#this sucks.
 
-		with settings(warn_only=True):
-			for v in range(MUTE_THRESHOLD):
-				local(self.OMX_CMD['exe'] %('+' if unmute else '-', video_mapping.fifo))
-		'''
+		def get_vol():
+			with settings(warn_only=True):
+				volume = local("%s volume" % self.DBUS_CMD['exe'], capture=True)
+				
+				if not volume.succeeded:
+					print "COULD NOT GET VOLUME FROM DBUS"
+					return False
+
+				return float(volume.split(":")[1].strip())
+
+		threshold = MAX_VIDEO_VOLUME if unmute else MIN_VIDEO_VOLUME
+
+		while True:
+			volume = get_vol()
+			print "CURRENT VOLUME: %f" % volume
+			
+			if unmute and volume >= MAX_VIDEO_VOLUME:
+				print "UNMUTING DONE!"
+				break
+
+			if not unmute and volume <= MIN_VIDEO_VOLUME:
+				print "MUTING DONE!"
+				break
+
+			local(self.OMX_CMD['exe'] %('+' if unmute else '-', video_mapping.fifo))
+			sleep(0.01)
 
 		if video_callback is not None:
 			video_callback({'index' : video_mapping.index, 'info' : {'muted' : not unmute }})

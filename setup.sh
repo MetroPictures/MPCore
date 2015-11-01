@@ -39,3 +39,6 @@ sudo pip install -r $MODULE_DIR/core/requirements.txt
 # symlink all media
 cd $MODULE_DIR/core/media
 ln -s $MODULE_DIR/media/* .
+
+# xcontrol for dbusplayer
+echo "export DISPLAY=localhost:0.0" >> ~/.profile

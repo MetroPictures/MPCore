@@ -13,6 +13,9 @@ DTMF = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", \
 
 # represents keys on a telephone; l-r, t-b
 MAX_AUDIO_LEVEL = 50
+MAX_VIDEO_VOLUME  = 0.8
+MIN_VIDEO_VOLUME = 0.0001
+
 DEFAULT_TELEPHONE_GPIO = range(3, 15)
 DEFAULT_RELEASE_KEY = 14	# pound sign
 
