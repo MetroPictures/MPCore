@@ -8,6 +8,8 @@ from time import sleep, time
 from utils import start_daemon, stop_daemon, time_str_to_millis, millis_to_time_str
 from vars import BASE_DIR
 
+MUTE_THRESHOLD = 10
+
 class MPVideoPad(object):
 	OMX_CMD = {
 		'setup' : "omxplayer -I --no-osd -o local %s < %s",
@@ -174,7 +176,7 @@ class MPVideoPad(object):
 		else:
 			video_mapping = self.get_video_mapping_by_filename(video)
 			if video_mapping is None:
-				logging.err("NO VIDEEO %s TO PLAY/PAUSE!" % video)
+				logging.error("NO VIDEEO %s TO PLAY/PAUSE!" % video)
 				return False
 
 		logging.debug("play/pausing video #%d (%s)" % (video_mapping.index, video_mapping.src))
@@ -205,16 +207,32 @@ class MPVideoPad(object):
 
 		return self.pause_video(video=video, unpause=True, video_callback=video_callback)
 
-	def mute_video(self, video=None, unmute=False, video_callback=None):
-		logging.deubg("muting video")
+	def mute_video(self, video=None, video_callback=None, unmute=False):
+		if video is None:
+			video_mapping = self.video_mappings[0]
+		else:
+			video_mapping = self.get_video_mapping_by_filename(video)
+			if video_mapping is None:
+				logging.error("NO VIDEEO %s TO MUTE!" % video)
+				return False
 
-		# pause video
-		# set audio level
-		# unpause video
+		logging.debug("muting video")
+		
+		'''
+		#this sucks.
 
-		return False
+		with settings(warn_only=True):
+			for v in range(MUTE_THRESHOLD):
+				local(self.OMX_CMD['exe'] %('+' if unmute else '-', video_mapping.fifo))
+		'''
+
+		if video_callback is not None:
+			video_callback({'index' : video_mapping.index, 'info' : {'muted' : not unmute }})
+
+		return True
 
 	def unmute_video(self, video=None, video_callback=None):
 		logging.debug("unmuting video")
 
-		return self.mute_video(video=video, unmute=True, video_callback=video_callback)
+		return self.mute_video(video=video, video_callback=video_callback, unmute=True)
+
