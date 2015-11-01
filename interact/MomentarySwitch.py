@@ -5,7 +5,7 @@ class MomentarySwitch(object):
 	listen_for_press = None
 	listen_for_release = None
 
-	def __init__(self, pig, pin, trigger_low, bouncetime=0.3, callback=None, release_callback=None):
+	def __init__(self, pig, pin, trigger_low, bouncetime=0.2, callback=None, release_callback=None):
 		self.pig = pig
 		self.time_stamp = time()
 
