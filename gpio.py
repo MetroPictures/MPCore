@@ -77,9 +77,9 @@ class MPGPIO():
 
 		return True
 
-class GPIOThread(threading.Thread):
+class GPIOThread():
 	def __init__(self):
-		threading.Thread.__init__(self)
+		pass
 		
 	def run(self, api_port, d_files):
 		self.global_endpoint = "http://localhost:%d" % api_port
@@ -105,7 +105,7 @@ class GPIOThread(threading.Thread):
 			print e, type(e)
 
 class ReceiverThread(GPIOThread):
-	def __init__(self, pin=None):
+	def __init__(self):
 		GPIOThread.__init__(self)
 
 	def on_hang_up(self):
