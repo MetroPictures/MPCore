@@ -18,8 +18,8 @@ class MomentarySwitch(object):
 			self.released = pigpio.RISING_EDGE
 		else:
 			self.pud = pigpio.PUD_DOWN
-			self.pressed = pigpio.FALLING_EDGE
-			self.released = pigpio.RISING_EDGE
+			self.pressed = pigpio.RISING_EDGE
+			self.released = pigpio.FALLING_EDGE
 
 		self.callback = self.debounce(bouncetime, callback) if callback is not None else None
 		self.release_callback = self.debounce(bouncetime, release_callback) if release_callback is not None else None

@@ -1,3 +1,5 @@
+import pigpio
+from time import sleep
 from HallEffect import HallEffect
 
 def test_pick_up(gpio, level, tick):
@@ -9,16 +11,19 @@ def test_hang_up(gpio, level, tick):
 	print gpio, level, tick
 
 
-he = HallEffect(17, callback=test_pick_up, release_callback=test_hang_up)
+if __name__ == "__main__":
+	pig = pigpio.pi()
+	hall_effect = HallEffect(pig, 17, callback=test_pick_up, release_callback=test_hang_up)
 
-raw_input("Press Enter when ready...")
-print "Waiting for input"
+	raw_input("Press Enter when ready...")
+	print "Waiting for input"
 
-while True:
-	try:
-		sleep(0.01)
-	except KeyboardInterrupt:
-		print "Interrupted!"
+	while True:
+		try:
+			sleep(0.01)
+		except KeyboardInterrupt:
+			print "Interrupted!"
+			break
 
-he.unlisten()
-he.pig.stop()
+	hall_effect.unlisten()
+	pig.stop()
