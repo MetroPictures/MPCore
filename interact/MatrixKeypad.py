@@ -62,6 +62,7 @@ class MatrixKeypad():
 		key_input.append(col_val)
 		self.exit()
 
+		sleep(0.2)
 		return (key_input[0] * len(self.column_pins)) + key_input[1]
 
 

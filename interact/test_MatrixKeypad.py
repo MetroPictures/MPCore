@@ -20,7 +20,7 @@ if __name__ == "__main__":
 			if key_pressed is not None:
 				print "KEY PRESSED: %s" % key_pressed
 
-			sleep(0.15)
+			sleep(0.1)
 		except KeyboardInterrupt:
 			print "Interrupted!"
 			break
