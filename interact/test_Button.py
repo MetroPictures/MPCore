@@ -8,7 +8,7 @@ def test_callback(gpio, level, tick):
 
 if __name__ == "__main__":
 	pig = pigpio.pi()
-	button = Button(pig, 23, callback=test_callback)
+	button = Button(pig, 21, callback=test_callback)
 
 	raw_input("Press Enter when ready...")
 	print "Waiting for input"
