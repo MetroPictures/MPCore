@@ -30,11 +30,15 @@ class MPGPIO():
 			return self.__on_gpio_status_changed(True, mocked_gpio=True)
 
 		gpio_mappings = get_config('gpio_mappings')
+		receiver = buttons = []
 
-		receiver = globals()[gpio_mappings['receiver']['type']](pin=None if 'pin' not in gpio_mappings['receiver'].keys() else \
-			gpio_mappings['receiver']['pin'])
-		buttons = [globals()[gpio_mappings['buttons']['type']](pin) \
-			for pin in gpio_mappings['buttons']['pins']]
+		if 'receiver' in gpio_mappings.keys():
+			receiver = globals()[gpio_mappings['receiver']['type']](pin=None if 'pin' not in gpio_mappings['receiver'].keys() else \
+				gpio_mappings['receiver']['pin'])
+		
+		if 'buttons' in gpio_mappings.keys():
+			buttons = [globals()[gpio_mappings['buttons']['type']](pin) \
+				for pin in gpio_mappings['buttons']['pins']]
 
 		for m, mapping in enumerate([receiver] + buttons):
 			d_files = {'log' : self.conf['d_files']['gpio']['log'], \
@@ -50,7 +54,12 @@ class MPGPIO():
 			return self.__on_gpio_status_changed(False, mocked_gpio=True)
 
 		gpio_mappings = get_config('gpio_mappings')
-		for m in xrange(1 + len(gpio_mappings['buttons']['pins'])):
+
+		pins = 0
+		if 'buttons' in gpio_mappings.keys():
+			pins += len(gpio_mappings['buttons']['pins'])
+		
+		for m in xrange((1 if 'receiver' in gpio_mappings.keys() else 0) + pins):
 			d_files = {'log' : self.conf['d_files']['gpio']['log'], \
 				'pid' : os.path.join(BASE_DIR, ".monitor", "gpio_%d.pid.txt" % m)}
 
@@ -132,7 +141,7 @@ class HallEffectReceiverThread(ReceiverThread):
 		from interact.HallEffect import HallEffect
 
 		ReceiverThread.__init__(self)
-		self.gpio = HallEffect(self.pig, pin, callback=self.on_pick_up, release_callback=self.on_hang_up)
+		self.gpio = HallEffect(pig, pin, callback=self.on_pick_up, release_callback=self.on_hang_up)
 		logging.debug("HallEffectReceiverThread online.")
 
 	def on_pick_up(self, gpio, level, tick):
