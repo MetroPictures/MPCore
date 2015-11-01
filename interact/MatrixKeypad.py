@@ -2,8 +2,8 @@ import pigpio
 from time import sleep
 
 class MatrixKeypad():
-	def __init__(self, column_pins, row_pins):
-		self.pig = pigpio.pi()
+	def __init__(self, pig, column_pins, row_pins):
+		self.pig = pig
 		self.column_pins = column_pins
 		self.row_pins = row_pins
 
@@ -21,7 +21,7 @@ class MatrixKeypad():
 			self.pig.set_mode(pin, pigpio.INPUT)
 			self.pig.set_pull_up_down(pin, pigpio.PUD_UP)
 
-		for pin self.column_pins:
+		for pin in self.column_pins:
 			self.pig.set_mode(pin, pigpio.INPUT)
 			self.pig.set_pull_up_down(pin, pigpio.PUD_UP)
 
