@@ -4,10 +4,13 @@ from time import time, sleep
 from fabric.api import settings, local
 
 from utils import start_daemon, stop_daemon, get_config
-from vars import BASE_DIR, DTMF, MAX_RECORDING_TIME, RATE, ENDIAN, AUDIO_BIN_SIZE, FRAMERATE
+from vars import BASE_DIR, DTMF, MAX_RECORDING_TIME, RATE, ENDIAN, AUDIO_BIN_SIZE, FRAMERATE, \
+	MAX_AUDIO_LEVEL
 
 if get_config('use_audio') in [None, True]:
 	import pygame
+
+AMIXER_EXE = "amixer -q sset 'Speaker' %s,%s"
 
 class MPAudioPad():
 	def __init__(self):
@@ -15,6 +18,10 @@ class MPAudioPad():
 		
 		if get_config('split_audio_channels'):
 			self.split_chan = True
+
+		self.max_audio_level = get_config('max_audio_level')
+		if self.max_audio_level is None:
+			self.max_audio_level = MAX_AUDIO_LEVEL
 
 		logging.basicConfig(filename=self.conf['d_files']['audio']['log'], level=logging.DEBUG)
 
@@ -24,6 +31,8 @@ class MPAudioPad():
 		with settings(warn_only=True):
 			local("rm ~/.asoundrc")
 			local("ln -s %s ~/.asoundrc" % os.path.join(BASE_DIR, "core", "lib", "alsa-config", "asoundrc"))
+		
+		self.restore_audio()
 
 		audio_receiver = self.db.pubsub()
 		audio_receiver.subscribe(['audio_receiver'])
@@ -64,6 +73,11 @@ class MPAudioPad():
 	def stop_audio_pad(self):
 		stop_daemon(self.conf['d_files']['audio'])
 
+	def restore_audio(self):
+		with settings(warn_only=True):
+			local(AMIXER_EXE % ("{0}%".format(self.max_audio_level), \
+				"{0}%".format(self.max_audio_level)))
+
 	def stop_audio(self, channel=None):
 		if channel is None:
 			channel = [0,1]
@@ -85,6 +99,24 @@ class MPAudioPad():
 	def unpause(self, channel=0):
 		channel = pygame.mixer.Channel(channel)
 		channel.unpause()
+		return True
+
+	def mute_channel(self, channel):
+		logging.info("MUTING AUDIO CHANNEL %d" % channel)
+
+		with settings(warn_only=True):
+			local(AMIXER_EXE % ("0%" if channel == 0 else "0%+", \
+				"0%" if channel == 1 else "0%+"))
+
+		return True
+
+	def unmute_channel(self, channel):
+		logging.info("UNMUTING AUDIO CHANNEL %d" % channel)
+		
+		with settings(warn_only=True):
+			local(AMIXER_EXE % ("{0}%".format(self.max_audio_level) if channel == 0 else "0%+", \
+				"{0}%".format(self.max_audio_level) if channel == 1 else "0%+"))
+
 		return True
 
 	class PlayThread(threading.Thread):
