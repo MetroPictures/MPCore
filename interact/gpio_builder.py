@@ -3,7 +3,6 @@ from sys import argv, exit
 from time import time, sleep
 
 pig = pigpio.pi()
-api_port = 8080
 components = []
 
 class GPIOThread(object):
@@ -39,8 +38,6 @@ class GPIOThread(object):
 			try:
 				r = requests.get(url)
 			except Exception as e:
-				#print "OH NO COULD NOT SEND"
-				#print e, type(e)
 				pass
 
 			self.time_stamp = time_now
@@ -137,7 +134,10 @@ class HallEffectReceiverThread(ReceiverThread):
 		self.component.unlisten()
 
 class IRReceiverThread(ReceiverThread):
-	def __init__(self):
+	def __init__(self, threshold):
+		self.is_hung_up = True
+		self.threshold = threshold
+
 		from VCNL4010 import VCNL4010
 		self.component = VCNL4010()
 		self.component.continuous_conversion_on()
@@ -145,9 +145,25 @@ class IRReceiverThread(ReceiverThread):
 		super(IRReceiverThread, self).__init__()
 
 	def parse_state(self):
-		sleep(0.1)
+		global bouncetime
+		sleep(0.3)
 
-		# logic?
+		proximity = self.component.read_proximity()
+		
+		if self.is_hung_up and proximity <= self.threshold['pick_up']:
+			self.on_pick_up()
+			sleep(bouncetime)
+		elif not self.is_hung_up and proximity >= self.threshold['hang_up']:
+			self.on_hang_up()
+			sleep(bouncetime)
+
+	def on_pick_up(self):
+		self.is_hung_up = False
+		super(IRReceiverThread, self).on_pick_up()
+
+	def on_hang_up(self):
+		self.is_hung_up = True
+		super(IRReceiverThread, self).on_hang_up()
 
 def teardown_handler(signal, frame):
 	print "SIGNAL TO TEARDOWN PIGPIO!"
@@ -157,7 +173,7 @@ def teardown_handler(signal, frame):
 	
 	exit(0)
 
-def build_pigpio(manifest, api_port_, bouncetime_=2.5):
+def build_pigpio(manifest, api_port_, bouncetime_):
 	manifest = json.loads(manifest)
 
 	global api_port, bouncetime
@@ -184,7 +200,7 @@ def build_pigpio(manifest, api_port_, bouncetime_=2.5):
 			components.append(HallEffectReceiverThread(manifest['receiver']['pin']))
 
 		if manifest['receiver']['type'] == "IRReceiver":
-			components.append(IRReceiverThread())
+			components.append(IRReceiverThread(manifest['receiver']['threshold']))
 
 	for c in components:
 		c.start()
@@ -198,7 +214,7 @@ signal.signal(signal.SIGINT, teardown_handler)
 if __name__ == "__main__":
 	print argv
 
-	build_pigpio(argv[1], argv[2])
+	build_pigpio(argv[1], argv[2], bouncetime_=2.5 if len(argv) == 3 else argv[3])
 	
 	while True:
 		try:

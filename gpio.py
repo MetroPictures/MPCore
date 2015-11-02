@@ -29,10 +29,14 @@ class MPGPIO():
 		gpio_mappings = get_config('gpio_mappings')
 		cmd = [
 			"python",
-			os.path.join(BASE_DIR, "core", "interact", "pigpio_builder.py"),
+			os.path.join(BASE_DIR, "core", "interact", "gpio_builder.py"),
 			json.dumps(gpio_mappings),
 			str(self.conf['api_port'])
 		]
+
+		bouncetime = get_config('bouncetime')
+		if bouncetime is not None:
+			cmd.append(bouncetime)
 		
 		# signal start
 		from subprocess import Popen
