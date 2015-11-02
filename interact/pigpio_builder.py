@@ -25,10 +25,10 @@ class GPIOThread(threading.Thread):
 
 		try:
 			r = requests.get(url)
-			logging.info(r.content)
 		except Exception as e:
-			print "OH NO COULD NOT SEND"
-			print e, type(e)
+			#print "OH NO COULD NOT SEND"
+			#print e, type(e)
+			pass
 
 	def terminate(self):
 		pass
@@ -51,7 +51,7 @@ class ButtonThread(GPIOThread):
 		super(ButtonThread, self).__init__()
 
 	def on_button_press(self, gpio, level, tick):
-		print "HELLO PRESS %s" % gpio
+		print "PRESSED %s" % gpio
 		super(ButtonThread, self).send("mapping/%d" % gpio)
 
 	def terminate(self):

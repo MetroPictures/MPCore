@@ -29,22 +29,6 @@ class MPGPIO():
 		gpio_mappings = get_config('gpio_mappings')
 		
 		# signal start
-		cmd = [
-			"python", 
-			os.path.join(BASE_DIR, "core", "interact", "pigpio_builder.py"),
-			json.dumps(gpio_mappings), 
-			str(self.conf['api_port'])
-		]
-
-		with open(self.conf['d_files']['gpio']['log'], 'a') as gpio_log:
-			gpio_process = Popen(cmd, shell=False, \
-				stdout=gpio_log, stderr=gpio_log, stdin=gpio_log)
-
-		logging.info("GPIO PROGRAM STARTED AT PID %d" % gpio_process.pid)
-		
-		# write pid to d_file
-		with open(self.conf['d_files']['gpio']['pid'], 'wb+') as PID:
-			PID.write(str(gpio_process.pid))
 		
 		return self.__on_gpio_status_changed(True)
 
@@ -52,15 +36,8 @@ class MPGPIO():
 		if mock_gpio:
 			return self.__on_gpio_status_changed(False, mocked_gpio=True)
 
-		try:
-			# get pid from d_file
-			with open(self.conf['d_files']['gpio']['pid'], 'rb') as PID:
-				# signal stop
-				os.kill(int(PID.read().strip()), SIGINT)
-		except Exception as e:
-			logging.error("no pid for gpio process probably")
-			print e, type(e)
-
+		# signal stop
+		
 		return self.__on_gpio_status_changed(False)
 
 	def get_gpio_status(self):
