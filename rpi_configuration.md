@@ -75,6 +75,8 @@ At this point, reboot to gain access to the pi via ssh if you'd like.
 	```
 	before the `exit 0` line.
 
+1.	The sculpture might also have a different aspect ratio than expected.  Modify `/boot/config.txt` with the appropriate values for `hdmi_mode` and `hdmi_group` (see [this](http://elinux.org/RPiconfig#Video) for more information.)
+
 ##	8. Finally, reboot
 
 All these settings should update on reboot.

@@ -16,6 +16,7 @@
 #   Python port created by Tony DiCola (tony@tonydicola.com
 
 import Adafruit_I2C
+from time import sleep
 
 LED_ON = 1
 LED_OFF = 0
@@ -36,6 +37,33 @@ buttonLUT = [ 0x07, 0x04, 0x02, 0x22,
 			  0x05, 0x06, 0x00, 0x01,
 			  0x03, 0x10, 0x30, 0x21,
 			  0x13, 0x12, 0x11, 0x31 ]
+
+I2C_BUS = 1
+NUMTRELLIS = 1
+
+class TrellisKeypad():
+	def __init__(self, callback=None):
+		self.callback = callback
+		self.numKeys = NUMTRELLIS * 16		
+		matrix = Adafruit_Trellis()
+		
+		self.trellis = Adafruit_TrellisSet(matrix)
+		self.trellis.begin((0x70, I2C_BUS))
+
+	def listen():
+		if self.trellis.readSwitches():
+			for i in range(self.numKeys):
+				
+				if self.trellis.justPressed(i):
+					if self.callback is not None:
+						self.callback(i)
+					
+					if self.trellis.isLED(i):
+						self.trellis.clrLED(i)
+					else:
+						self.trellis.setLED(i)
+
+			self.trellis.writeDisplay()
 
 
 class Adafruit_Trellis(object):

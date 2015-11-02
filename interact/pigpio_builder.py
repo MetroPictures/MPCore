@@ -16,7 +16,6 @@ class GPIOThread(threading.Thread):
 	def run(self):
 		while True:
 			self.parse_state()
-			sleep(0.005)
 
 	def parse_state(self):
 		pass
@@ -30,6 +29,9 @@ class GPIOThread(threading.Thread):
 		except Exception as e:
 			print "OH NO COULD NOT SEND"
 			print e, type(e)
+
+	def terminate(self):
+		pass
 
 class ReceiverThread(GPIOThread):
 	def __init__(self):
@@ -52,6 +54,60 @@ class ButtonThread(GPIOThread):
 		print "HELLO PRESS %s" % gpio
 		super(ButtonThread, self).send("mapping/%d" % gpio)
 
+	def terminate(self):
+		super(ButtonThread, self).terminate()
+		self.component.unlisten()
+
+class ButtonLowThread(GPIOThread):
+	def __init__(self, pin):
+		from ButtonLow import ButtonLow
+		self.component = ButtonLow(pig, pin, callback=self.on_button_press)
+
+		super(ButtonLowThread, self).__init__()
+
+	def on_button_press(self, gpio, level, tick):
+		print "PRESSED %s" % gpio
+		super(ButtonLowThread, self).send("mapping/%d" % gpio)
+
+	def terminate(self):
+		super(ButtonThread, self).terminate()
+		self.component.unlisten()
+
+class MatrixKeypadThread(GPIOThread):
+	def __init__(self, matrix):
+		from MatrixKeypad import MatrixKeypad
+		self.component = MatrixKeypad(pig, matrix[0], matrix[1])
+
+		super(MatrixKeypadThread, self).__init__()
+
+	def parse_state(self):
+		super(MatrixKeypadThread, self).parse_state()
+
+		key_pressed = self.component.read_key()
+		if key_pressed is not None:
+			self.on_button_press(key_pressed)
+
+		sleep(0.1)
+
+	def on_button_press(self, button):
+		super(MatrixKeypadThread, self).send("mapping/%d" % button)
+
+class TrellisKeypadThread(GPIOThread):
+	def __init__(self):
+		from TrellisKeypad import TrellisKeypad
+		self.component = TrellisKeypad(callback=self.on_button_press)
+
+		super(TrellisKeypadThread, self).__init__()
+
+	def parse_state(self):
+		super(TrellisKeypadThread, self).parse_state()
+
+		sleep(0.03)
+		self.component.listen()
+
+	def on_button_press(self, button):
+		super(TrellisKeypadThread, self).send("mapping/%d" % button)
+
 class HallEffectReceiverThread(ReceiverThread):
 	def __init__(self, pin):
 		from HallEffect import HallEffect
@@ -65,6 +121,23 @@ class HallEffectReceiverThread(ReceiverThread):
 	def on_hang_up(self, gpio, level, tick):
 		super(HallEffectReceiverThread, self).on_hang_up()
 
+	def terminate(self):
+		super(ButtonThread, self).terminate()
+		self.component.unlisten()
+
+class IRReceiverThread(ReceiverThread):
+	def __init__(self):
+		from VCNL4010 import VCNL4010
+		self.component = VCNL4010()
+		self.component.continuous_conversion_on()
+
+		super(IRReceiverThread, self).__init__()
+
+	def parse_state(self):
+		sleep(0.1)
+
+		# logic?
+
 def build_pigpio(manifest):
 	manifest = json.loads(manifest)
 
@@ -72,12 +145,23 @@ def build_pigpio(manifest):
 		if manifest['buttons']['type'] == "Button":
 			for pin in manifest['buttons']['pins']:
 				components.append(ButtonThread(pin))
+
+		if manifest['buttons']['type'] == "ButtonLow":
+			for pin in manifest['buttons']['pins']:
+				components.append(ButtonLowThread(pin))
+
+		if manifest['buttons']['type'] == "MatrixKeypad":
+			components.append(MatrixKeypadThread(manifest['buttons']['pins']))
+
+		if manifest['buttons']['type'] == "TrellisKeypad":
+			components.append(TrellisKeypadThread())
 		
 	if "receiver" in manifest.keys():
 		if manifest['receiver']['type'] == "HallEffect":
 			components.append(HallEffectReceiverThread(manifest['receiver']['pin']))
 
-		# etc.
+		if manifest['receiver']['type'] == "IRReceiver":
+			components.append(IRReceiverThread())
 
 	for c in components:
 		c.start()
@@ -87,3 +171,4 @@ def build_pigpio(manifest):
 if __name__ == "__main__":
 	print argv
 	exit(0 if build_pigpio(argv[1]) else -1)
+
