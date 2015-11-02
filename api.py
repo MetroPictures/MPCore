@@ -1,4 +1,4 @@
-import signal, os, redis, json, logging
+import signal, os, redis, json, logging, requests
 from multiprocessing import Process
 import tornado.ioloop, tornado.httpserver, tornado.web
 from time import sleep
@@ -86,7 +86,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		MPGPIO.__init__(self)
 
 		self.start_gpio()
-		
+
 		p = Process(target=self.start_audio_pad)
 		p.start()	
 
@@ -108,6 +108,19 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		
 		logging.info("EVERYTHING IS OFFLINE.")
 		return True
+
+	def signal_restart(self):
+		logging.info("EMERGENCY! RESTART!")
+
+		try:
+			r = requests.get("http://localhost:%d/hang_up" % self.conf['api_port'])
+			if not json.loads(r.content)['ok']:
+				return
+
+			r = requests.get("http://localhost:%d/pick_up" % self.conf['api_port'])
+		except Exception as e:
+			logging.error("OH NO")
+			print e, type(e)
 
 	class TestHandler(tornado.web.RequestHandler):
 		def get(self):
