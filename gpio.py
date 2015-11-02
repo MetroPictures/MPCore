@@ -33,11 +33,8 @@ class MPGPIO():
 			json.dumps(gpio_mappings),
 			str(self.conf['api_port'])
 		]
-
-		print " ".join(cmd)
 		
 		# signal start
-
 		from subprocess import Popen
 
 		DEV_NULL = open(os.devnull, 'w')

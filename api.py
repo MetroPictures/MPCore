@@ -85,11 +85,10 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		MPIVR.__init__(self)
 		MPGPIO.__init__(self)
 
+		self.start_gpio()
+		
 		p = Process(target=self.start_audio_pad)
 		p.start()	
-
-		p = Process(target=self.start_gpio)
-		p.start()
 
 		p = Process(target=self.start_api)
 		p.start()
