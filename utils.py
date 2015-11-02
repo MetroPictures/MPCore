@@ -44,10 +44,10 @@ def time_str_to_millis(time_st):
 def millis_to_time_str(millis):
 	dm, ds = divmod(millis/1000, 60)
 	dh, dm = divmod(dm, 60)
-	return "%02d:%02d:%02f" % (dh, dm, ds)
+	return "%02d:%02d:%08f" % (dh, dm, ds)
 
 def micros_to_time_str(micros):
-	return millis_to_time_str(micros * 1000)
+	return millis_to_time_str(micros/1000)
 
 def start_daemon(d_files):	
 	try:

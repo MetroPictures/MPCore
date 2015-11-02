@@ -12,7 +12,7 @@ MUTE_THRESHOLD = 10
 
 class MPVideoPad(object):
 	OMX_CMD = {
-		'setup' : "omxplayer -I --no-osd -o local %s < %s",
+		'setup' : "omxplayer -b -I --no-osd -o local %s < %s",
 		'exe' : "echo -n %s > %s"
 	}
 
@@ -172,7 +172,42 @@ class MPVideoPad(object):
 
 				break
 
-		stop_daemon(video_mapping.d_files)		
+		stop_daemon(video_mapping.d_files)
+
+	def set_video_position(self, position, video=None, video_callback=None):
+		if video is None:
+			video_mapping = self.video_mappings[0]
+		else:
+			video_mapping = self.get_video_mapping_by_filename(video)
+			if video_mapping is None:
+				logging.error("NO VIDEO %s TO SEEK!" % video)
+				return False
+
+		logging.debug("seeking to position %d" % position)
+		local("%s setposition %d" % (self.DBUS_CMD['exe'], position))
+
+		if video_callback is not None:
+			video_callback({'index' : video_mapping.index, 'info' : {'seek_to' : position}})
+
+		return True
+
+	def get_video_position(self, video=None):
+		if video is None:
+			video_mapping = self.video_mappings[0]
+		else:
+			video_mapping = self.get_video_mapping_by_filename(video)
+			if video_mapping is None:
+				logging.error("NO VIDEEO %s TO PLAY/PAUSE!" % video)
+				return False
+
+		logging.debug("getting position of video #%d (%s)" % (video_mapping.index, video_mapping.src))
+		status = local("%s status" % self.DBUS_CMD['exe'], capture=True)
+					
+		if not status.succeeded:
+			logging.error("COULD NOT GET DBUS STATUS")
+			return None
+
+		return int(status.splitlines()[1].split(":")[1].strip())
 	
 	def pause_video(self, video=None, unpause=False, video_callback=None):
 		if video is None:
@@ -195,14 +230,7 @@ class MPVideoPad(object):
 				if not unpause:
 					old_info = self.get_video_info(video_mapping.index)					
 					info['last_pause_time'] = pause_time
-					
-					status = local("%s status" % self.DBUS_CMD['exe'], capture=True)
-					
-					if not status.succeeded:
-						logging.error("COULD NOT GET DBUS STATUS")
-						return False
-
-					info['position_at_last_pause'] = int(status.splitlines()[1].split(":")[1].strip())
+					info['position_at_last_pause'] = self.get_video_position(video=video)
 
 				else:
 					info['start_time'] = pause_time

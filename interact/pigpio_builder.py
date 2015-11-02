@@ -1,4 +1,4 @@
-import os, pigpio, json, requests, threading
+import os, pigpio, json, requests, threading, signal
 from sys import argv, exit
 from time import sleep
 
@@ -138,8 +138,19 @@ class IRReceiverThread(ReceiverThread):
 
 		# logic?
 
-def build_pigpio(manifest):
+def teardown_handler(signal, frame):
+	print "SIGNAL TO TEARDOWN PIGPIO!"
+	
+	teardown_pigpio()
+	pig.stop()
+	
+	exit(0)
+
+def build_pigpio(manifest, api_port_):
 	manifest = json.loads(manifest)
+
+	global api_port
+	api_port = int(api_port_)
 
 	if "buttons" in manifest.keys():
 		if manifest['buttons']['type'] == "Button":
@@ -164,11 +175,26 @@ def build_pigpio(manifest):
 			components.append(IRReceiverThread())
 
 	for c in components:
+		c.daemon = True
 		c.start()
 
-	return False
+def teardown_pigpio():
+	for c in components:
+		c.terminate()
+
+signal.signal(signal.SIGINT, teardown_handler)
 
 if __name__ == "__main__":
 	print argv
-	exit(0 if build_pigpio(argv[1]) else -1)
+
+	build_pigpio(argv[1], argv[2])
+	
+	while True:
+		try:
+			pass
+		except KeyboardInterrupt:
+			break	
+
+	
+
 

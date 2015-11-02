@@ -12,7 +12,6 @@ if __name__ == "__main__":
 
 	raw_input("Press Enter when ready...")
 	print "Waiting for input"
-	print dir(button)
 
 	while True:
 		try:
