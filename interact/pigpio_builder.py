@@ -1,34 +1,49 @@
-import os, pigpio, json, requests, threading, signal
+import os, pigpio, json, threading, requests, signal
 from sys import argv, exit
-from time import sleep
+from time import time, sleep
 
 pig = pigpio.pi()
 api_port = 8080
 components = []
 
-class GPIOThread(threading.Thread):
+class GPIOThread(object):
 	def __init__(self):
-		threading.Thread.__init__(self)
 		
 		global api_port
 		self.global_endpoint = "http://localhost:%d" % api_port
+		self.time_stamp = time()
 
-	def run(self):
-		while True:
-			self.parse_state()
+	def start(self):
+		if hasattr(self, "state_parser"):
+			self.state_parser = self.StateParser(self.state_parser)
+			self.state_parser.daemon = True
+			self.state_parser.start()
 
-	def parse_state(self):
-		pass
+	class StateParser(threading.Thread):
+		def __init__(self, state_parser):
+			self.parse_state = state_parser
+			threading.Thread.__init__(self)
+
+		def run(self):
+			while True:
+				self.parse_state()
 
 	def send(self, endpoint):
-		url = "%s/%s" % (self.global_endpoint, endpoint)
+		global bouncetime
+		time_now = time()
 
-		try:
-			r = requests.get(url)
-		except Exception as e:
-			#print "OH NO COULD NOT SEND"
-			#print e, type(e)
-			pass
+		if (time_now - self.time_stamp) >= bouncetime:
+			print "ATTEMPTING SEND!"
+			url = "%s/%s" % (self.global_endpoint, endpoint)
+
+			try:
+				r = requests.get(url)
+			except Exception as e:
+				#print "OH NO COULD NOT SEND"
+				#print e, type(e)
+				pass
+
+			self.time_stamp = time_now
 
 	def terminate(self):
 		pass
@@ -80,9 +95,7 @@ class MatrixKeypadThread(GPIOThread):
 
 		super(MatrixKeypadThread, self).__init__()
 
-	def parse_state(self):
-		super(MatrixKeypadThread, self).parse_state()
-
+	def state_parser(self):
 		key_pressed = self.component.read_key()
 		if key_pressed is not None:
 			self.on_button_press(key_pressed)
@@ -99,9 +112,7 @@ class TrellisKeypadThread(GPIOThread):
 
 		super(TrellisKeypadThread, self).__init__()
 
-	def parse_state(self):
-		super(TrellisKeypadThread, self).parse_state()
-
+	def state_parser(self):
 		sleep(0.03)
 		self.component.listen()
 
@@ -146,11 +157,12 @@ def teardown_handler(signal, frame):
 	
 	exit(0)
 
-def build_pigpio(manifest, api_port_):
+def build_pigpio(manifest, api_port_, bouncetime_=2.5):
 	manifest = json.loads(manifest)
 
-	global api_port
+	global api_port, bouncetime
 	api_port = int(api_port_)
+	bouncetime = bouncetime_
 
 	if "buttons" in manifest.keys():
 		if manifest['buttons']['type'] == "Button":
@@ -175,7 +187,6 @@ def build_pigpio(manifest, api_port_):
 			components.append(IRReceiverThread())
 
 	for c in components:
-		c.daemon = True
 		c.start()
 
 def teardown_pigpio():
