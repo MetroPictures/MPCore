@@ -7,7 +7,8 @@ from utils import start_daemon, stop_daemon, get_config
 from vars import BASE_DIR, DTMF, MAX_RECORDING_TIME, RATE, ENDIAN, AUDIO_BIN_SIZE, FRAMERATE, \
 	MAX_AUDIO_LEVEL
 
-if get_config('use_audio') in [None, True]:
+twilio_audio = get_config('twilio_audio')
+if twilio_audio in [None, False]:
 	import pygame
 
 AMIXER_EXE = "amixer -q sset 'Speaker' %s,%s"
@@ -26,6 +27,10 @@ class MPAudioPad():
 		logging.basicConfig(filename=self.conf['d_files']['audio']['log'], level=logging.DEBUG)
 
 	def start_audio_pad(self):
+		if twilio_audio:
+			logging.info("Twilio Audio; no audio pad needed")
+			return
+
 		start_daemon(self.conf['d_files']['audio'])
 			
 		with settings(warn_only=True):
@@ -71,9 +76,15 @@ class MPAudioPad():
 				self.db.publish('audio_responder', json.dumps(res))
 
 	def stop_audio_pad(self):
+		if twilio_audio:
+			logging.info("Twilio audio. No Audio pad here.")
+
 		stop_daemon(self.conf['d_files']['audio'])
 
 	def restore_audio(self):
+		if twilio_audio:
+			return
+
 		with settings(warn_only=True):
 			local(AMIXER_EXE % ("{0}%".format(self.max_audio_level), \
 				"{0}%".format(self.max_audio_level)))

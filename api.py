@@ -224,9 +224,13 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	def on_hang_up(self):
 		logging.info("hanging up")
-		self.send_command({ 'stop_audio' : True })
 		stop_daemon(self.conf['d_files']['module'])
 		self.db.set('IS_HUNG_UP', True)
+
+		if get_config('twilio_audio'):
+			return { 'ok' : str_to_bool(self.db.get('IS_HUNG_UP')) }
+
+		self.send_command({ 'stop_audio' : True })
 
 		try:
 			current_record_pid = self.db.get("CURRENT_RECORD_PID")
