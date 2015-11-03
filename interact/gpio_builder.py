@@ -144,7 +144,7 @@ class IRReceiverThread(ReceiverThread):
 
 		super(IRReceiverThread, self).__init__()
 
-	def parse_state(self):
+	def state_parser(self):
 		global bouncetime
 		sleep(0.3)
 
