@@ -137,7 +137,7 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		def get(self):
 			logging.info("pick up: rpi_id %s" % self.application.conf['rpi_id'])
 			
-			result = self.application.on_pick_up()
+			result = self.application.on_pick_up(self.get_argument('From', None, True))
 
 			if type(result) is dict:
 				self.set_status(200 if result['ok'] else 400)
