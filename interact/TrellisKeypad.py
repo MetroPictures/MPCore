@@ -50,7 +50,7 @@ class TrellisKeypad():
 		self.trellis = Adafruit_TrellisSet(matrix)
 		self.trellis.begin((0x70, I2C_BUS))
 
-	def listen():
+	def listen(self):
 		if self.trellis.readSwitches():
 			for i in range(self.numKeys):
 				
