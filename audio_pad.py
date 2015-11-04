@@ -18,6 +18,7 @@ class MPAudioPad():
 		
 		if get_config('split_audio_channels'):
 			self.split_chan = True
+			self.split_map = get_config('split_map')
 
 		self.max_audio_level = get_config('max_audio_level')
 		if self.max_audio_level is None:
@@ -150,7 +151,14 @@ class MPAudioPad():
 			channel = pygame.mixer.Channel(0)
 		
 			if self.split_chan:
-				channel.set_volume(1, 0)
+				if self.split_map['play'] == 1:
+					LEFT = 1
+					RIGHT = 0
+				else:
+					LEFT = 0
+					RIGHT = 1
+
+				channel.set_volume(LEFT, RIGHT)
 
 			duration = audio.get_length()
 			time_started = time()
@@ -197,7 +205,14 @@ class MPAudioPad():
 			channel = pygame.mixer.Channel(1)
 
 			if self.split_chan:
-				channel.set_volume(0, 1)
+				if self.split_map['clip'] == 1:
+					LEFT = 1
+					RIGHT = 0
+				else:
+					LEFT = 0
+					RIGHT = 1
+
+				channel.set_volume(LEFT, RIGHT)
 			
 			channel.play(audio)
 			logging.debug("playing clip %s (length %d)" % (src, audio.get_length()))
