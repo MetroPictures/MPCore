@@ -40,5 +40,9 @@ sudo pip install -r $MODULE_DIR/core/requirements.txt
 cd $MODULE_DIR/core/media
 ln -s $MODULE_DIR/media/* .
 
-# xcontrol for dbusplayer
-echo "export DISPLAY=localhost:0.0" >> ~/.profile
+# profile modifications
+sudo cp $MODULE_DIR/core/lib/autostart/rc.local /etc/rc.local
+cp $MODULE_DIR/core/lib/autostart/.profile ~/.profile
+cp $MODULE_DIR/core/lib/autostart/.mp_profile ~/.mp_profile
+
+

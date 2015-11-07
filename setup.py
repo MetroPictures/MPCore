@@ -76,8 +76,11 @@ def install(with_cdn=True):
 	except Exception as e:
 		pass
 
-	run = Popen(['core/setup.sh', BASE_DIR, str(redis_port), str(-1 if mock_gpio else 1)])
-	run.communicate()
+	# setup auto-start
+	info = get_config('info')
+	if info is not None:
+		with open(os.path.join(os.path.expanduser('~'), ".mp_autostart"), 'wb+') as A:
+			A.write("cd %s && python %s.py --start" % (info['dir'], info['module']))
 
 	# modify redis config
 	redis_conf = []
