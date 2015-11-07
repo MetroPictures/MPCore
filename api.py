@@ -82,6 +82,13 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	def start(self):
 		logging.info("Start invoked.")
 
+		from crontab import CronTab
+		cron = CronTab(user=True)
+
+		job = cron.new(command="cd %s && python core/cron.py" % BASE_DIR)
+		job.day.every(1)
+		job.enable()
+
 		MPIVR.__init__(self)
 		MPGPIO.__init__(self)
 
@@ -105,6 +112,14 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		self.stop_api()
 		self.stop_gpio()
 		self.stop_audio_pad()
+
+		from crontab import CronTab
+
+		cron = CronTab(user=True)
+		for job in cron:
+			job.enable(False)
+
+		cron.remove_all()
 		
 		logging.info("EVERYTHING IS OFFLINE.")
 		return True
@@ -252,31 +267,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	def run_script(self):
 		start_daemon(self.conf['d_files']['module'])
-
-	# necessary?
-	def build_key_map(self, route):
-		return [c[0] for c in self.key_mappings[route]]
-
-	# necessary?
-	def find_next_route(self, route, choice):
-		try:
-			return [c[1] for c in self.key_mappings[route] if c[0] == choice][0]
-		except Exception as e:
-			print e, type(e)
-
-		return None
-
-	# necessary?
-	def route_loop(self, route):
-		logging.info(route)
-
-		choice = self.prompt(os.path.join("prompts", "%s.wav" % route), self.build_key_map(route))
-		next_route = self.find_next_route(route, choice)
-
-		if next_route is not None:
-			return self.route_loop(next_route)
-		
-		return False
 
 	def start_api(self):
 		"""Starts API, initializes the redis database, and daemonizes all processes so they may be restarted or stopped.
