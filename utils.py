@@ -1,5 +1,6 @@
 import os, sys, signal, json
 from subprocess import Popen, PIPE
+from hashlib import sha256
 from vars import BASE_DIR
 
 def get_config(keys):
@@ -23,6 +24,14 @@ def get_config(keys):
 		print e, type(e)
 
 	return None
+
+def num_to_hash(num, salt):
+	s = sha256()
+	
+	s.update(num)
+	s.update(salt)
+	
+	return s.hexdigest()
 
 def str_to_bool(str):
 	try:
