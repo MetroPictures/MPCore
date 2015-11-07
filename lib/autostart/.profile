@@ -17,5 +17,5 @@ for i in $(seq 0 $PADDING); do
 	echo ""
 done
 
-sleep 1 m
+sleep 1m
 source ~/.mp_autostart
