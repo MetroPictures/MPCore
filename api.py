@@ -112,7 +112,13 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		self.stop_gpio()
 		self.stop_audio_pad()
 
+		from crontab import CronTab
+		cron = CronTab(user=True)
+
 		with settings(warn_only=True):
+			for job in cron:
+				local(job.command)
+		
 			local("crontab -r")
 		
 		logging.info("EVERYTHING IS OFFLINE.")
