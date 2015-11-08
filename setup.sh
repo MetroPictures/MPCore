@@ -40,17 +40,3 @@ sudo pip install -r $MODULE_DIR/core/requirements.txt
 cd $MODULE_DIR/core/media
 ln -s $MODULE_DIR/media/* .
 
-# profile modifications
-sudo cp $MODULE_DIR/core/lib/autostart/rc.local /etc/rc.local
-
-cp $MODULE_DIR/core/lib/autostart/.profile ~/.profile
-echo "" >> ~/.profile
-echo "sleep 15 && ~/.mp_autostart" >> ~/.profile 
-
-cp $MODULE_DIR/core/lib/autostart/.mp_profile ~/.mp_profile
-
-# crontab
-echo "59 23 * * * $(which python) $MODULE_DIR/core/cron.py" > $MODULE_DIR/.monitor/crontab
-
-
-
