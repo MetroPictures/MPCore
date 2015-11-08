@@ -40,5 +40,3 @@ sudo pip install -r $MODULE_DIR/core/requirements.txt
 cd $MODULE_DIR/core/media
 ln -s $MODULE_DIR/media/* .
 
-# crontab
-echo "59 23 * * * $(which python) $MODULE_DIR/core/cron.py" > $MODULE_DIR/.monitor/crontab

@@ -60,6 +60,42 @@ def update_cdn():
 
 	ftp.quit()
 
+def set_autostart_info():
+	info = get_config('info')
+	if info is None:
+		return False
+
+	# setup auto-start
+	for f in [".profile", ".mp_profile"]:
+		Popen(["cp", os.path.join(BASE_DIR, "core", "lib", "autostart", f), os.path.expanduser('~')])
+
+	with open(os.path.join(os.path.expanduser('~'), ".mp_autostart"), 'wb+') as A:
+		A.write("cd %s && python %s.py --start" % (info['dir'], info['module']))
+
+	with open(os.path.join(os.path.expanduser('~'), ".profile"), 'ab') as A:
+		A.write("\nsleep 15 && ~/.mp_autostart")
+
+	Popen(["sudo", "cp", os.path.join(BASE_DIR, "core", "lib", "autostart", "rc.local"), os.path.join("/", "etc", "rc.local")])
+
+	# set media info
+	if "sculpture" in info.keys():
+		info_directives = [
+			"export SCULPTURE_TITLE=\"%s\"" % info['sculpture']['title'],
+			"export SCULPTURE_LINK=\"%s\"" % info['sculpture']['link']
+		]
+
+		with open(os.path.join(os.path.expanduser('~'), ".mp_profile"), 'ab') as I:
+			I.write("\n%s" % "\n".join(info_directives))
+
+	return True
+
+def set_crontab():
+	py_exe = Popen(["which", "python"], shell=False, stdout=PIPE)
+
+	with open(os.path.join(BASE_DIR, ".monitor", "crontab"), 'wb+') as C:
+		C.write("# Default sculpture crontab\n")
+		C.write("59 23 * * * %s %s\n" % (py_exe.stdout.read().strip(), os.path.join(BASE_DIR, "core", "cron.py")))
+
 def install(with_cdn=True):
 	# run setup scripts
 	redis_port, api_port, mock_gpio = get_config(['redis_port', 'api_port', 'mock_gpio'])
@@ -115,3 +151,9 @@ if __name__ == "__main__":
 
 		if argv[1] == "no-update":
 			install(with_cdn=False)
+
+		if argv[1] == "auto-start-update":
+			set_autostart_info()
+
+		if argv[1] == "set-crontab":
+			set_crontab()
