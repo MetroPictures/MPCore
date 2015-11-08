@@ -1,5 +1,7 @@
 import signal, os, redis, json, logging, requests
 from multiprocessing import Process
+from fabric.api import settings, local
+from fabric.context_managers import hide
 import tornado.ioloop, tornado.httpserver, tornado.web
 from time import sleep
 
@@ -56,7 +58,8 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 			'api_port' : api_port,
 			'num_processes' : num_processes,
 			'redis_port' : redis_port,
-			'media_dir' : os.path.join(BASE_DIR, "core", "media")
+			'media_dir' : os.path.join(BASE_DIR, "core", "media"),
+			'crontab' : os.path.join(BASE_DIR, '.monitor', 'crontab')
 		}
 
 		if custom_test_pad is not None:
@@ -82,12 +85,8 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 	def start(self):
 		logging.info("Start invoked.")
 
-		from crontab import CronTab
-		cron = CronTab(user=True)
-
-		job = cron.new(command="cd %s && python core/cron.py" % BASE_DIR)
-		job.day.every(1)
-		job.enable()
+		with settings(warn_only=True):
+			local("crontab %s" % self.conf['crontab'])
 
 		MPIVR.__init__(self)
 		MPGPIO.__init__(self)
@@ -113,13 +112,8 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 		self.stop_gpio()
 		self.stop_audio_pad()
 
-		from crontab import CronTab
-
-		cron = CronTab(user=True)
-		for job in cron:
-			job.enable(False)
-
-		cron.remove_all()
+		with settings(warn_only=True):
+			local("crontab -r")
 		
 		logging.info("EVERYTHING IS OFFLINE.")
 		return True
@@ -281,8 +275,6 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 			server.bind(self.conf['api_port'])
 		except Exception as e:
 			import re
-			from fabric.api import settings, local
-			from fabric.context_managers import hide
 			from vars import KILL_RX, NO_KILL_RX
 
 			with settings(hide('everything'), warn_only=True):
