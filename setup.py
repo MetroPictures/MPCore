@@ -76,11 +76,8 @@ def install(with_cdn=True):
 	except Exception as e:
 		pass
 
-	# setup auto-start
-	info = get_config('info')
-	if info is not None:
-		with open(os.path.join(os.path.expanduser('~'), ".mp_autostart"), 'wb+') as A:
-			A.write("cd %s && python %s.py --start" % (info['dir'], info['module']))
+	run = Popen(['core/setup.sh', BASE_DIR, str(redis_port), str(-1 if mock_gpio else 1)])
+	run.communicate()
 
 	# modify redis config
 	redis_conf = []
@@ -105,6 +102,22 @@ def install(with_cdn=True):
 
 	Popen(['sudo', 'mv', os.path.join(BASE_DIR, "%d.conf" % redis_port), \
 		os.path.join("/", "etc", "redis", "%d.conf" % redis_port)])
+
+	info = get_config('info')
+	if info is not None:
+		# setup auto-start
+		with open(os.path.join(os.path.expanduser('~'), ".mp_autostart"), 'wb+') as A:
+			A.write("cd %s && python %s.py --start" % (info['dir'], info['module']))
+
+		# set media info
+		if "sculpture" in info.keys():
+			info_directives = [
+				"export SCULPTURE_TITLE=\"%s\"" % info['sculpture']['title'],
+				"export SCULPTURE_LINK=\"%s\"" % info['sculpture']['link']
+			]
+
+			with open(os.path.join(os.path.expanduser('~'), ".mp_profile"), 'ab') as I:
+				I.write("\n%s" % "\n".join(info_directives))
 
 	print "OK!  Don't forget to test your soundcard, and then reboot!"
 
