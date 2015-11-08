@@ -49,4 +49,8 @@ echo "sleep 15 && ~/.mp_autostart" >> ~/.profile
 
 cp $MODULE_DIR/core/lib/autostart/.mp_profile ~/.mp_profile
 
+# crontab
+echo "59 23 * * * $(which python) $MODULE_DIR/core/cron.py" > $MODULE_DIR/.monitor/crontab
+
+
 
