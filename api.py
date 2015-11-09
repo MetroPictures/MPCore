@@ -139,10 +139,18 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	class TestHandler(tornado.web.RequestHandler):
 		def get(self):
+			if not self.application.authenticate_twilio(self.get_argument('AccountSid', None, True)):
+				self.finish("")
+				return
+				
 			self.render(os.path.join(self.application.test_pad_dir, "index.html"))
 
 	class StatusHandler(tornado.web.RequestHandler):
 		def get(self):
+			if not self.application.authenticate_twilio(self.get_argument('AccountSid', None, True)):
+				self.finish("")
+				return
+
 			result = self.application.get_status()
 
 			self.set_status(200 if result['ok'] else 400)
@@ -150,6 +158,10 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	class PickUpHandler(tornado.web.RequestHandler):
 		def get(self):
+			if not self.application.authenticate_twilio(self.get_argument('AccountSid', None, True)):
+				self.finish("")
+				return
+
 			logging.info("pick up: rpi_id %s" % self.application.conf['rpi_id'])
 			
 			result = self.application.on_pick_up(self.get_argument('From', None, True), \
@@ -162,6 +174,10 @@ class MPServerAPI(tornado.web.Application, MPIVR, MPGPIO):
 
 	class HangUpHandler(tornado.web.RequestHandler):
 		def get(self):
+			if not self.application.authenticate_twilio(self.get_argument('AccountSid', None, True)):
+				self.finish("")
+				return
+
 			logging.info("hang up: rpi_id %s" % self.application.conf['rpi_id'])
 			
 			result = self.application.on_hang_up()
